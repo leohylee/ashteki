@@ -14,10 +14,11 @@ services:
             - './public:/usr/src/app/public'
             - './less:/usr/src/app/less'
             - './config:/usr/src/app/config'
-        links:
-            - mongo
         depends_on:
             - mongo
+            - redis
+        environment:
+            - REDIS_URL=redis://redis:6379
         command:
             - node
             - '--inspect=0.0.0.0:9229'
@@ -25,12 +26,18 @@ services:
     node:
         restart: always
         build: .
+        image: ashteki
         ports:
             - '9500:9500'
             - '9339:9339'
         volumes:
             - './server:/usr/src/app/server'
             - './config:/usr/src/app/config'
+        depends_on:
+            - mongo
+            - redis
+        environment:
+            - REDIS_URL=redis://redis:6379
         command:
             - node
             - '--inspect=0.0.0.0:9339'
