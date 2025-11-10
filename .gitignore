@@ -17,3 +17,6 @@ mongodb
 .vscode/
 /.idea/
 release.bat
+dump.rdb
+# one off scripts
+scripts/

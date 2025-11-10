@@ -9,10 +9,11 @@ export function imageUrl(cardStub) {
     if (cardStub && cardStub.includes('http')) {
         return cardStub;
     }
+    // Use local images first, fallback to CDN if not available
     if (cardStub && cardStub.includes('.')) {
-        return `https://cdn.ashes.live/images/cards/${cardStub}`;
+        return `/cards/${cardStub}`;
     }
-    return `https://cdn.ashes.live/images/cards/${cardStub}.jpg`;
+    return `/cards/${cardStub}.jpg`;
 }
 
 export const getCardBack = (card) => {
