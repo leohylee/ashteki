@@ -286,6 +286,30 @@ export default function (state = { decks: [], cards: {} }, action) {
             processDecks([newState.selectedDeck], state);
 
             return newState;
+        case 'ADD_DRAFT_DECK':
+            // Get all Phoenixborn cards and randomly select one
+            var allPhoenixborn = Object.values(state.cards).filter(
+                (card) => card.type === 'Phoenixborn'
+            );
+            var randomPhoenixborn = allPhoenixborn[Math.floor(Math.random() * allPhoenixborn.length)];
+
+            var newDraftDeck = {
+                name: 'New Draft Deck',
+                cards: [],
+                conjurations: [],
+                phoenixborn: [randomPhoenixborn],
+                dicepool: [],
+                mode: 'draft'
+            };
+
+            newState = Object.assign({}, state, {
+                selectedDeck: newDraftDeck,
+                deckSaved: false
+            });
+
+            processDecks([newState.selectedDeck], state);
+
+            return newState;
         case 'UPDATE_DECK':
             newState = Object.assign({}, state, {
                 selectedDeck: action.deck,

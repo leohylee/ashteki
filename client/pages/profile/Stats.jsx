@@ -12,7 +12,7 @@ class Stats extends React.Component {
         super(props);
         this.state = {
             selectedTerm: 0,
-            gameType: null
+            gameType: 'solo'
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleTypeChange = this.handleTypeChange.bind(this);
@@ -160,6 +160,7 @@ class Stats extends React.Component {
                                 <option value='competitive'>Ranked PvP</option>
                                 <option value='casual'>Casual PvP</option>
                                 <option value='solo'>Solo</option>
+                                <option value='draft'>Draft</option>
                             </select>
                         </div>
 

@@ -10640,6 +10640,76 @@
             "battlefield": 6,
             "life": 20,
             "spellboard": 3
+        },
+        {
+            "name": "Ceremonial Dice",
+            "stub": "ceremonial-dice",
+            "type": "Dice",
+            "release": {
+                "name": "Master Set",
+                "stub": "master-set"
+            },
+            "text": "Ceremonial magic focuses on abilities that deal damage to units and Phoenixborn."
+        },
+        {
+            "name": "Charm Dice",
+            "stub": "charm-dice",
+            "type": "Dice",
+            "release": {
+                "name": "Master Set",
+                "stub": "master-set"
+            },
+            "text": "Charm magic focuses on control and manipulation abilities."
+        },
+        {
+            "name": "Divine Dice",
+            "stub": "divine-dice",
+            "type": "Dice",
+            "release": {
+                "name": "The King of Titans",
+                "stub": "the-king-of-titans"
+            },
+            "text": "Divine magic focuses on resurrection and graveyard manipulation."
+        },
+        {
+            "name": "Illusion Dice",
+            "stub": "illusion-dice",
+            "type": "Dice",
+            "release": {
+                "name": "Master Set",
+                "stub": "master-set"
+            },
+            "text": "Illusion magic focuses on card draw and deception."
+        },
+        {
+            "name": "Natural Dice",
+            "stub": "natural-dice",
+            "type": "Dice",
+            "release": {
+                "name": "Master Set",
+                "stub": "master-set"
+            },
+            "text": "Natural magic focuses on unit summoning and enhancement."
+        },
+        {
+            "name": "Sympathy Dice",
+            "stub": "sympathy-dice",
+            "type": "Dice",
+            "release": {
+                "name": "Master Set",
+                "stub": "master-set"
+            },
+            "text": "Sympathy magic focuses on damage prevention and healing."
+        },
+        {
+            "name": "Time Dice",
+            "stub": "time-dice",
+            "type": "Dice",
+            "release": {
+                "name": "The Breaker of Fate",
+                "stub": "the-breaker-of-fate"
+            },
+            "text": "Time magic focuses on manipulating dice and additional actions."
         }
     ]
 }

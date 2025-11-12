@@ -55,6 +55,12 @@ export function addDeck() {
     };
 }
 
+export function addDraftDeck() {
+    return {
+        type: 'ADD_DRAFT_DECK'
+    };
+}
+
 export function updateDeck(deck) {
     return {
         type: 'UPDATE_DECK',
@@ -107,14 +113,21 @@ export function setFavourite(deck, value) {
 }
 
 function getDeckJson(deck) {
-    return JSON.stringify({
+    const deckData = {
         deckName: deck.name,
         phoenixborn: formatCards(deck.phoenixborn),
         cards: formatCards(deck.cards),
         conjurations: formatCards(deck.conjurations),
         dicepool: deck.dicepool,
         notes: deck.notes
-    });
+    };
+
+    // Include mode field if present (e.g., 'draft')
+    if (deck.mode) {
+        deckData.mode = deck.mode;
+    }
+
+    return JSON.stringify(deckData);
 }
 
 export function saveDeck(deck) {

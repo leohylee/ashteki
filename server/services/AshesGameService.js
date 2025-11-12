@@ -168,7 +168,8 @@ class GameService {
         const findSpec = {
             'players.name': username,
             gameType: { $ne: 'beginner' },
-            solo: { $ne: true }
+            solo: { $ne: true },
+            gameFormat: { $ne: 'draft' }  // Exclude draft games from default view
         };
         if (!options.includeNonWins) {
             findSpec.winner = { $exists: true };
@@ -184,7 +185,13 @@ class GameService {
         if (options.gameType) {
             if (options.gameType === 'solo') {
                 findSpec.solo = true;
+                // Keep draft exclusion for solo view (draft games should only show in draft view)
+            } else if (options.gameType === 'draft') {
+                // Remove solo filter for draft games (draft games against Chimera have solo=true)
+                delete findSpec.solo;
+                findSpec.gameFormat = 'draft';
             } else {
+                delete findSpec.gameFormat;  // Remove draft exclusion for specific game types
                 findSpec.gameType = options.gameType;
             }
         }
@@ -218,7 +225,8 @@ class GameService {
             'players.name': username,
             'players.deck': { $ne: null },
             gameType: { $ne: 'beginner' },
-            solo: { $ne: true }
+            solo: { $ne: true },
+            gameFormat: { $ne: 'draft' }  // Exclude draft games from default PvP view
         };
         if (mon && mon > 0) {
             const fromDate = moment().subtract(mon, 'months');
@@ -227,10 +235,18 @@ class GameService {
         if (gameType) {
             if (gameType === 'solo') {
                 findSpec.solo = true;
+                // Keep draft exclusion for solo view (draft games should only show in draft view)
+            } else if (gameType === 'draft') {
+                // Remove solo filter for draft games (draft games against Chimera have solo=true)
+                delete findSpec.solo;
+                findSpec.gameFormat = 'draft';
             } else {
+                delete findSpec.gameFormat;  // Remove draft exclusion for specific game types
                 findSpec.gameType = gameType;
             }
         }
+
+        console.log('getStatsByUserName - gameType:', gameType, 'findSpec:', JSON.stringify(findSpec, null, 2));
 
         return this.games
             .find(findSpec, {
