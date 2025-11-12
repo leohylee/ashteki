@@ -16,6 +16,7 @@ class InnerDeckEditor extends React.Component {
         this.state = {
             cardList: '',
             diceList: '',
+            sideboardList: '',
             notes: '',
             deck: this.copyDeck(props.deck),
             numberToAdd: 1,
@@ -64,6 +65,15 @@ class InnerDeckEditor extends React.Component {
 
             this.setState({ diceList: diceList });
         }
+
+        let sideboardList = '';
+        if (this.props.deck && this.props.deck.sideboard) {
+            _.each(this.props.deck.sideboard, (card) => {
+                sideboardList += this.getCardListEntry(card.count, card.card);
+            });
+
+            this.setState({ sideboardList: sideboardList });
+        }
     }
 
     // XXX One could argue this is a bit hacky, because we're updating the innards of the deck object, react doesn't update components that use it unless we change the reference itself
@@ -71,7 +81,8 @@ class InnerDeckEditor extends React.Component {
         if (!deck) {
             return {
                 name: 'New Deck',
-                phoenixborn: []
+                phoenixborn: [],
+                sideboard: []
             };
         }
 
@@ -84,7 +95,8 @@ class InnerDeckEditor extends React.Component {
             status: deck.status,
             notes: deck.notes,
             dicepool: deck.dicepool,
-            mode: deck.mode
+            mode: deck.mode,
+            sideboard: deck.sideboard || []
         };
     }
 
@@ -225,6 +237,45 @@ class InnerDeckEditor extends React.Component {
         deck = this.copyDeck(deck);
 
         this.setState({ diceList: event.target.value, deck: deck });
+        this.props.updateDeck(deck);
+    }
+
+    onSideboardListChange(event) {
+        event.preventDefault();
+
+        let deck = this.state.deck;
+        let split = event.target.value.split('\n');
+
+        deck.sideboard = [];
+
+        _.each(split, (line) => {
+            line = line.trim();
+
+            if (!$.isNumeric(line[0])) {
+                return;
+            }
+
+            let index = 0;
+            while (!isNaN(line[index]) || line[index] === 'x') {
+                index++;
+            }
+            let num = parseInt(line.substr(0, index));
+            let cardName = line.substr(index, line.length).trim();
+
+            let card = this.getCard(cardName);
+
+            if (card) {
+                deck.sideboard.push({
+                    count: num,
+                    card: card,
+                    id: card.stub
+                });
+            }
+        });
+
+        deck = this.copyDeck(deck);
+
+        this.setState({ sideboardList: event.target.value, deck: deck });
         this.props.updateDeck(deck);
     }
 
@@ -426,18 +477,30 @@ class InnerDeckEditor extends React.Component {
     }
 
     onDraftSideboardCardSelected(selectedCard, quantity) {
-        // Add the card name to notes as sideboard entry instead of adding to deck
+        // Add the card to sideboard array instead of notes
         let deck = this.state.deck;
-        const sideboardEntry = `Sideboard: ${quantity} ${selectedCard.name}`;
-        const currentNotes = deck.notes || '';
-        const newNotes = currentNotes ? `${currentNotes}\n${sideboardEntry}` : sideboardEntry;
 
-        deck.notes = newNotes;
+        if (!deck.sideboard) {
+            deck.sideboard = [];
+        }
+
+        // Add card to sideboard
+        deck.sideboard.push({
+            count: quantity,
+            card: selectedCard,
+            id: selectedCard.stub
+        });
+
+        // Update the sideboard list text
+        let sideboardList = this.state.sideboardList;
+        sideboardList += this.getCardListEntry(quantity, selectedCard);
+
         deck = this.copyDeck(deck);
 
         // Track this card as picked, clear the draft options after selection, and decrement sideboard picks
         this.setState({
             showSideboardPicker: false,
+            sideboardList: sideboardList,
             draftCardOptions: [],
             refreshesRemaining: 3,
             lockedCardIndices: [],
@@ -627,6 +690,12 @@ class InnerDeckEditor extends React.Component {
                         rows='4'
                         value={this.state.cardList}
                         onChange={this.onCardListChange.bind(this)}
+                    />
+                    <TextArea
+                        label='Sideboard'
+                        rows='4'
+                        value={this.state.sideboardList}
+                        onChange={this.onSideboardListChange.bind(this)}
                     />
                     <h4>Enter dice quantities into the box below, one per line (Charm, Ceremonial, Illusion, Natural, Divine, Sympathy, Time)</h4>
                     <TextArea

@@ -118,6 +118,7 @@ function getDeckJson(deck) {
         phoenixborn: formatCards(deck.phoenixborn),
         cards: formatCards(deck.cards),
         conjurations: formatCards(deck.conjurations),
+        sideboard: formatCards(deck.sideboard || []),
         dicepool: deck.dicepool,
         notes: deck.notes
     };

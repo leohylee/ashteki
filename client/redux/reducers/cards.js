@@ -43,6 +43,18 @@ function processDecks(decks, state) {
             card: Object.assign({}, state.cards[card.id]),
             id: card.id
         }));
+
+        // Process sideboard cards if they exist
+        if (deck.sideboard && deck.sideboard.length > 0) {
+            deck.sideboard = deck.sideboard.map((card) => ({
+                count: card.count,
+                card: Object.assign({}, state.cards[card.id]),
+                id: card.id
+            }));
+        } else {
+            deck.sideboard = [];
+        }
+
         let hasConjurations = checkConjurations(deck);
         let tenDice = 10 === deck.dicepool.reduce((acc, d) => acc + d.count, 0);
 

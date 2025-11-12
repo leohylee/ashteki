@@ -78,6 +78,7 @@ const DeckSummary = ({ deck, editMode }) => {
             <Row className='deck-cards'>
                 {radioValue ? (
                     <>
+                        <div className='basic-title'>Main</div>
                         <div className='basic-title'>First Five</div>
                         <CardListImg deckCards={deck.cards.filter((c) => c.ff)} noIndex={true} />
                         <div className='basic-title'>All Cards</div>
@@ -85,9 +86,24 @@ const DeckSummary = ({ deck, editMode }) => {
                         <CardListImg deckCards={deck.cards} />
                         <div className='basic-title'>Conjurations</div>
                         <CardListImg deckCards={deck.conjurations} />
+                        {deck.sideboard && deck.sideboard.length > 0 && (
+                            <>
+                                <div className='basic-title'>Sideboard</div>
+                                <CardListImg deckCards={deck.sideboard} />
+                            </>
+                        )}
                     </>
                 ) : (
-                    <CardListText deckCards={combinedCards} highlight={magicHover} onFFClick={onFFClick} />
+                    <>
+                        <div className='basic-title'>Main</div>
+                        <CardListText deckCards={combinedCards} highlight={magicHover} onFFClick={onFFClick} />
+                        {deck.sideboard && deck.sideboard.length > 0 && (
+                            <>
+                                <div className='basic-title'>Sideboard</div>
+                                <CardListText deckCards={deck.sideboard} highlight={magicHover} />
+                            </>
+                        )}
+                    </>
                 )}
             </Row>
             <Row>
