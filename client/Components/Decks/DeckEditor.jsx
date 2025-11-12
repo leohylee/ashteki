@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import _ from 'underscore';
-import $ from 'jquery';
 import { connect } from 'react-redux';
 import { Form, Col, Row, Button } from 'react-bootstrap';
 import { Typeahead } from 'react-bootstrap-typeahead';
@@ -78,18 +77,13 @@ class InnerDeckEditor extends React.Component {
 
     componentDidUpdate(prevProps) {
         // Update text areas when deck changes from external sources (like swap action)
+        // Only update cardList and sideboardList which are read-only in draft mode
+        // Don't update diceList as it should always be editable
         if (this.props.deck && prevProps.deck !== this.props.deck) {
             let cardList = '';
             if (this.props.deck.cards) {
                 _.each(this.props.deck.cards, (card) => {
                     cardList += this.getCardListEntry(card.count, card.card, card.ff);
-                });
-            }
-
-            let diceList = '';
-            if (this.props.deck.dicepool) {
-                _.each(this.props.deck.dicepool, (diceCount) => {
-                    diceList += this.getDiceListEntry(diceCount);
                 });
             }
 
@@ -102,7 +96,6 @@ class InnerDeckEditor extends React.Component {
 
             this.setState({
                 cardList: cardList,
-                diceList: diceList,
                 sideboardList: sideboardList,
                 deck: this.copyDeck(this.props.deck)
             });
@@ -199,7 +192,7 @@ class InnerDeckEditor extends React.Component {
         _.each(split, (line) => {
             line = line.trim();
 
-            if (!$.isNumeric(line[0])) {
+            if (!line[0] || isNaN(line[0])) {
                 return;
             }
 
@@ -253,7 +246,7 @@ class InnerDeckEditor extends React.Component {
         _.each(split, (line) => {
             line = line.trim();
 
-            if (!$.isNumeric(line[0])) {
+            if (!line[0] || isNaN(line[0])) {
                 return;
             }
 
@@ -284,7 +277,7 @@ class InnerDeckEditor extends React.Component {
         _.each(split, (line) => {
             line = line.trim();
 
-            if (!$.isNumeric(line[0])) {
+            if (!line[0] || isNaN(line[0])) {
                 return;
             }
 

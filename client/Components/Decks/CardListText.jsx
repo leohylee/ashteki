@@ -142,9 +142,9 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
             });
 
             cardsToRender.push(
-                <div className='cards-no-break'>
+                <div key={key} className='cards-no-break'>
                     <div className='card-group-title'>{key + ' (' + count.toString() + ')'}</div>
-                    <div key={key} className='deck-card-group'>
+                    <div className='deck-card-group'>
                         {cards}
                     </div>
                 </div>
