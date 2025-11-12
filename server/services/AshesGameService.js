@@ -218,7 +218,8 @@ class GameService {
             'players.name': username,
             'players.deck': { $ne: null },
             gameType: { $ne: 'beginner' },
-            solo: { $ne: true }
+            solo: { $ne: true },
+            gameFormat: { $ne: 'draft' }  // Exclude draft games from default PvP view
         };
         if (mon && mon > 0) {
             const fromDate = moment().subtract(mon, 'months');
@@ -227,7 +228,13 @@ class GameService {
         if (gameType) {
             if (gameType === 'solo') {
                 findSpec.solo = true;
+                // Keep draft exclusion for solo view (draft games should only show in draft view)
+            } else if (gameType === 'draft') {
+                // Remove solo filter for draft games (draft games against Chimera have solo=true)
+                delete findSpec.solo;
+                findSpec.gameFormat = 'draft';
             } else {
+                delete findSpec.gameFormat;  // Remove draft exclusion for specific game types
                 findSpec.gameType = gameType;
             }
         }

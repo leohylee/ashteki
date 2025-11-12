@@ -3,9 +3,10 @@ import PropTypes from 'prop-types';
 import _ from 'underscore';
 import $ from 'jquery';
 import { connect } from 'react-redux';
-import { Form, Col, Row } from 'react-bootstrap';
+import { Form, Col, Row, Button } from 'react-bootstrap';
 import { Typeahead } from 'react-bootstrap-typeahead';
 import TextArea from '../Form/TextArea.jsx';
+import DraftCardPicker from './DraftCardPicker.jsx';
 import * as actions from '../../redux/actions';
 
 class InnerDeckEditor extends React.Component {
@@ -21,7 +22,11 @@ class InnerDeckEditor extends React.Component {
             validation: {
                 deckname: '',
                 cardToAdd: ''
-            }
+            },
+            showDraftPicker: false,
+            draftCardOptions: [],
+            refreshesRemaining: 3,
+            lockedCardIndices: []
         };
     }
 
@@ -75,7 +80,8 @@ class InnerDeckEditor extends React.Component {
             conjurations: deck.conjurations,
             status: deck.status,
             notes: deck.notes,
-            dicepool: deck.dicepool
+            dicepool: deck.dicepool,
+            mode: deck.mode
         };
     }
 
@@ -333,6 +339,119 @@ class InnerDeckEditor extends React.Component {
         return diceCount.count + ' ' + diceCount.magic + '\n';
     }
 
+    // Draft mode methods
+    getRandomCards(count = 4) {
+        // Get the current deck's Phoenixborn name
+        const currentPhoenixborn = this.state.deck.phoenixborn?.[0]?.name;
+
+        const availableCards = this.getAllCards().filter(
+            (card) => {
+                // Exclude Phoenixborn, Conjurations, and Conjured Alteration Spells
+                if (card.type === 'Phoenixborn' ||
+                    card.type === 'Conjuration' ||
+                    card.type === 'Conjured Alteration Spell') {
+                    return false;
+                }
+
+                // Exclude cards that belong to other Phoenixborn
+                // Cards without a phoenixborn property are available to all
+                if (card.phoenixborn && card.phoenixborn !== currentPhoenixborn) {
+                    return false;
+                }
+
+                return true;
+            }
+        );
+
+        // Shuffle and pick random cards
+        const shuffled = _.shuffle(availableCards);
+        return shuffled.slice(0, count);
+    }
+
+    onOpenDraftPicker() {
+        // Only generate new cards if we don't have any current options
+        const randomCards = this.state.draftCardOptions.length > 0
+            ? this.state.draftCardOptions
+            : this.getRandomCards(4);
+
+        this.setState({
+            showDraftPicker: true,
+            draftCardOptions: randomCards
+        });
+    }
+
+    onDraftCardSelected(selectedCard, quantity) {
+        // Add the selected card to the deck with the specified quantity
+        let deck = this.state.deck;
+        this.addCard(selectedCard, quantity, deck);
+
+        // Update the card list text
+        let cardList = this.state.cardList;
+        cardList += this.getCardListEntry(quantity, selectedCard);
+
+        deck = this.copyDeck(deck);
+
+        // Clear the draft options after selection so next click generates new cards
+        // Reset refresh counter and locked cards
+        this.setState({
+            cardList: cardList,
+            showDraftPicker: false,
+            draftCardOptions: [],
+            refreshesRemaining: 3,
+            lockedCardIndices: []
+        });
+
+        this.props.updateDeck(deck);
+    }
+
+    onRefreshDraftCards() {
+        if (this.state.refreshesRemaining > 0) {
+            const currentCards = this.state.draftCardOptions;
+            const lockedIndices = this.state.lockedCardIndices;
+
+            // Generate new cards for unlocked positions
+            const newRandomCards = this.getRandomCards(4 - lockedIndices.length);
+            const newCards = [];
+            let randomIndex = 0;
+
+            for (let i = 0; i < 4; i++) {
+                if (lockedIndices.includes(i)) {
+                    // Keep locked card
+                    newCards.push(currentCards[i]);
+                } else {
+                    // Replace with new random card
+                    newCards.push(newRandomCards[randomIndex]);
+                    randomIndex++;
+                }
+            }
+
+            this.setState({
+                draftCardOptions: newCards,
+                refreshesRemaining: this.state.refreshesRemaining - 1
+            });
+        }
+    }
+
+    onToggleLockCard(index) {
+        const lockedIndices = [...this.state.lockedCardIndices];
+        const indexPos = lockedIndices.indexOf(index);
+
+        if (indexPos > -1) {
+            // Unlock card
+            this.setState({ lockedCardIndices: [] });
+        } else {
+            // Lock card (only one card can be locked at a time)
+            this.setState({ lockedCardIndices: [index] });
+        }
+    }
+
+    onCloseDraftPicker() {
+        // Keep the draftCardOptions when closing without selecting
+        this.setState({
+            showDraftPicker: false
+        });
+    }
+
     render() {
         if (!this.props.deck || this.props.loading) {
             return <div>Waiting for deck...</div>;
@@ -367,6 +486,7 @@ class InnerDeckEditor extends React.Component {
                                 as='select'
                                 onChange={this.onPbChange.bind(this)}
                                 value={this.pbid}
+                                disabled={this.props.mode === 'AddDraft'}
                             >
                                 {phoenixbornCards.map((c, index) => {
                                     return (
@@ -376,43 +496,70 @@ class InnerDeckEditor extends React.Component {
                                     );
                                 })}
                             </Form.Control>
+                            {this.props.mode === 'AddDraft' && (
+                                <Form.Text className='text-muted'>
+                                    Phoenixborn randomly selected for draft mode
+                                </Form.Text>
+                            )}
                         </Col>
                     </Form.Group>
-                    <h4>
-                        You can type card names and quantities into the box below, or add them using
-                        this lookup box.
-                    </h4>
+                    {this.props.mode === 'AddDraft' ? (
+                        <>
+                            <h4>
+                                Click the button below to pick a card from 4 random options.
+                            </h4>
+                            <Row>
+                                <Col sm='3'></Col>
+                                <Col>
+                                    <Button
+                                        variant='info'
+                                        onClick={this.onOpenDraftPicker.bind(this)}
+                                        className='def'
+                                    >
+                                        Pick a Card
+                                    </Button>
+                                </Col>
+                            </Row>
+                        </>
+                    ) : (
+                        <>
+                            <h4>
+                                You can type card names and quantities into the box below, or add them using
+                                this lookup box.
+                            </h4>
 
-                    <Form.Group as={Row} controlId='cardLookup'>
-                        <Form.Label column sm='3'>
-                            Card
-                        </Form.Label>
-                        <Col sm='4'>
-                            <Typeahead
-                                options={lookupCards}
-                                onChange={this.addCardChange.bind(this)}
-                                labelKey={'name'}
-                            />
-                        </Col>
-                        <Form.Label column sm='2'>
-                            Count
-                        </Form.Label>
-                        <Col sm='2'>
-                            <Form.Control
-                                as='input'
-                                onChange={this.onNumberToAddChange.bind(this)}
-                                defaultValue={this.state.numberToAdd.toString()}
-                            />
-                        </Col>
-                    </Form.Group>
-                    <Row>
-                        <Col sm='3'></Col>
-                        <Col>
-                            <button className='btn btn-primary def' onClick={this.onAddCard.bind(this)}>
-                                Add
-                            </button>
-                        </Col>
-                    </Row>
+                            <Form.Group as={Row} controlId='cardLookup'>
+                                <Form.Label column sm='3'>
+                                    Card
+                                </Form.Label>
+                                <Col sm='4'>
+                                    <Typeahead
+                                        options={lookupCards}
+                                        onChange={this.addCardChange.bind(this)}
+                                        labelKey={'name'}
+                                    />
+                                </Col>
+                                <Form.Label column sm='2'>
+                                    Count
+                                </Form.Label>
+                                <Col sm='2'>
+                                    <Form.Control
+                                        as='input'
+                                        onChange={this.onNumberToAddChange.bind(this)}
+                                        defaultValue={this.state.numberToAdd.toString()}
+                                    />
+                                </Col>
+                            </Form.Group>
+                            <Row>
+                                <Col sm='3'></Col>
+                                <Col>
+                                    <button className='btn btn-primary def' onClick={this.onAddCard.bind(this)}>
+                                        Add
+                                    </button>
+                                </Col>
+                            </Row>
+                        </>
+                    )}
                     <TextArea
                         label='Cards'
                         rows='4'
@@ -450,6 +597,18 @@ class InnerDeckEditor extends React.Component {
                         </div>
                     </div>
                 </Form>
+                {this.props.mode === 'AddDraft' && (
+                    <DraftCardPicker
+                        show={this.state.showDraftPicker}
+                        cards={this.state.draftCardOptions}
+                        onCardSelected={this.onDraftCardSelected.bind(this)}
+                        onClose={this.onCloseDraftPicker.bind(this)}
+                        onRefresh={this.onRefreshDraftCards.bind(this)}
+                        refreshesRemaining={this.state.refreshesRemaining}
+                        onToggleLock={this.onToggleLockCard.bind(this)}
+                        lockedIndices={this.state.lockedCardIndices}
+                    />
+                )}
             </div>
         );
     }

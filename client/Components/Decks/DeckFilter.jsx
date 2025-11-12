@@ -1,4 +1,4 @@
-import { faHeart, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faHeart, faPlus, faRandom } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React from 'react';
 import Link from '../Navigation/Link';
@@ -64,6 +64,9 @@ const DeckFilter = ({ onNameChange, onPbChange, handleFaveChange, showButtons })
                         <Form.Group as={Col} xs='3'>
                             <Link className='btn btn-primary def' href='/decks/import'>
                                 <span className='phg-basic-magic'></span> Import
+                            </Link>
+                            <Link className='btn btn-info def' href='/decks/add-draft'>
+                                <FontAwesomeIcon icon={faRandom} /> Draft
                             </Link>
                             <Link className='btn btn-secondary def' href='/decks/add'>
                                 <FontAwesomeIcon icon={faPlus} /> New

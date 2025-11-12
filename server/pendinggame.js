@@ -86,9 +86,15 @@ class PendingGame {
             };
         });
 
+        // Check if any player is using a draft deck
+        const isDraftGame = _.some(this.getPlayers(), (player) => player.deck && player.deck.mode === 'draft');
+
+        // Override game format to 'draft' if draft deck is being used
+        const gameFormat = isDraftGame ? 'draft' : this.gameFormat;
+
         return {
             id: this.id,
-            gameFormat: this.gameFormat,
+            gameFormat: gameFormat,
             gamePrivate: this.gamePrivate,
             gameId: this.id,
             gameType: this.gameType,

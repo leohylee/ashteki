@@ -6,6 +6,7 @@ import Logout from './pages/Logout';
 import Register from './pages/Register';
 import Decks from './pages/Decks';
 import AddDeck from './pages/AddDeck';
+import AddDraftDeck from './pages/AddDraftDeck';
 import EditDeck from './pages/EditDeck';
 import Results from './pages/Results';
 
@@ -46,6 +47,7 @@ const routes = [
     { path: '/cards', action: () => <CardsPage key='cards' /> },
     { path: '/decks', action: () => <Decks key='decks' /> },
     { path: '/decks/add', action: () => <AddDeck /> },
+    { path: '/decks/add-draft', action: () => <AddDraftDeck /> },
     { path: '/decks/edit', action: (params) => <EditDeck deckId={params.deckId} /> },
     { path: '/decks/import', action: () => <ImportDeck key='importDecks' /> },
     { path: '/forgot', action: () => <ForgotPassword key='forgotpassword' /> },

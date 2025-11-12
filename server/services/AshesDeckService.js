@@ -191,7 +191,6 @@ class AshesDeckService {
 
     getDeckProperties(deck, isPrecon) {
         let properties = {
-            mode: deck.mode,
             name: deck.deckName || deck.name,
             format: deck.format,
             phoenixborn: deck.phoenixborn,
@@ -206,6 +205,12 @@ class AshesDeckService {
             ashesLiveUuid: deck.ashesLiveUuid,
             ashesLiveModified: deck.ashesLiveModified
         };
+
+        // Include mode field if present (e.g., 'draft')
+        if (deck.mode) {
+            properties.mode = deck.mode;
+        }
+
         if (isPrecon) {
             properties = Object.assign(properties, {
                 precon_id: deck.precon_id,
@@ -235,6 +240,11 @@ class AshesDeckService {
             favourite: deck.favourite,
             lastUpdated: new Date()
         };
+
+        // Include mode field if present (e.g., 'draft')
+        if (deck.mode) {
+            properties.mode = deck.mode;
+        }
 
         return this.decks.update({ _id: deck.id || deck._id }, { $set: properties });
     }
