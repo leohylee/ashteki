@@ -679,6 +679,7 @@ class Lobby {
                     break;
                 default:
                     deck = await this.deckService.getById(deckId);
+                    console.log('Loaded deck from DB:', deck.name, 'mode:', deck.mode);
             }
         }
 
