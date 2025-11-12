@@ -24,7 +24,7 @@ const Matches = () => {
     const username = useSelector((state) => state.account.user.username);
     const games = useSelector((state) => state.games.games);
     const [term, setTerm] = useState(1);
-    const [gameType, setGameType] = useState('');
+    const [gameType, setGameType] = useState('solo');
 
     useEffect(() => {
         dispatch(loadUserGames(term, gameType));
@@ -103,11 +103,12 @@ const Matches = () => {
                 </select>
             </div>
             <div className='col-md-6 inline'>
-                <select className='form-control' onChange={handleTypeChange}>
+                <select className='form-control' onChange={handleTypeChange} value={gameType}>
                     <option value=''>All Types</option>
                     <option value='competitive'>Ranked</option>
                     <option value='casual'>Casual</option>
                     <option value='solo'>Solo</option>
+                    <option value='draft'>Draft</option>
                 </select>
             </div>
 
