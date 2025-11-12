@@ -4,6 +4,21 @@ import { faLink, faStarOfLife } from '@fortawesome/free-solid-svg-icons';
 import CardImage from '../GameBoard/CardImage';
 import classNames from 'classnames';
 
+// Style constants for draft mode controls
+const QUANTITY_BUTTON_BASE_STYLE = {
+    padding: '0 6px',
+    fontSize: '0.8em'
+};
+
+const QUANTITY_CONTROLS_CONTAINER_STYLE = {
+    marginLeft: '5px'
+};
+
+const SWAP_SELECT_STYLE = {
+    marginLeft: '10px',
+    fontSize: '0.8em'
+};
+
 const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMode, mainDeckCards, onSwapCard, onQuantityChange, editMode }) => {
     let [zoomCard, setZoomCard] = useState(null);
     let [mousePos, setMousePosition] = useState({ x: 0, y: 0 });
@@ -60,13 +75,12 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
                 let quantityControls = null;
                 if (editMode && isDraftMode && onQuantityChange && !card.card?.type.includes('Conjur')) {
                     quantityControls = (
-                        <span style={{ marginLeft: '5px' }}>
+                        <span style={QUANTITY_CONTROLS_CONTAINER_STYLE}>
                             <button
                                 onClick={() => onQuantityChange(card.id, card.count - 1, isSideboard)}
                                 disabled={card.count <= 1}
                                 style={{
-                                    padding: '0 6px',
-                                    fontSize: '0.8em',
+                                    ...QUANTITY_BUTTON_BASE_STYLE,
                                     cursor: card.count <= 1 ? 'not-allowed' : 'pointer'
                                 }}
                             >
@@ -76,8 +90,7 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
                                 onClick={() => onQuantityChange(card.id, card.count + 1, isSideboard)}
                                 disabled={card.count >= 3}
                                 style={{
-                                    padding: '0 6px',
-                                    fontSize: '0.8em',
+                                    ...QUANTITY_BUTTON_BASE_STYLE,
                                     marginLeft: '2px',
                                     cursor: card.count >= 3 ? 'not-allowed' : 'pointer'
                                 }}
@@ -99,7 +112,7 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
                                     e.target.value = ''; // Reset selection
                                 }
                             }}
-                            style={{ marginLeft: '10px', fontSize: '0.8em' }}
+                            style={SWAP_SELECT_STYLE}
                         >
                             <option value="">Swap with...</option>
                             {mainDeckCards.map((mainCard) => (

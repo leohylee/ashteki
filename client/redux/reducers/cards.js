@@ -98,6 +98,51 @@ function checkConjurations(deck) {
     return result;
 }
 
+// Helper function to rebuild conjurations from phoenixborn and main deck cards
+function rebuildConjurations(deck, allCards) {
+    const conjurations = [];
+
+    // Add conjurations from phoenixborn
+    if (deck.phoenixborn && deck.phoenixborn.length > 0) {
+        const pbCard = deck.phoenixborn[0].card || deck.phoenixborn[0];
+        if (pbCard.conjurations) {
+            pbCard.conjurations.forEach((conj) => {
+                if (!conjurations.some((c) => c.id === conj.stub)) {
+                    const conjCard = allCards[conj.stub];
+                    if (conjCard) {
+                        conjurations.push({
+                            count: conjCard.copies || 1,
+                            card: Object.assign({}, conjCard),
+                            id: conj.stub
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    // Add conjurations from cards in main deck
+    deck.cards.forEach((deckCard) => {
+        const cardData = deckCard.card || allCards[deckCard.id];
+        if (cardData && cardData.conjurations) {
+            cardData.conjurations.forEach((conj) => {
+                if (!conjurations.some((c) => c.id === conj.stub)) {
+                    const conjCard = allCards[conj.stub];
+                    if (conjCard) {
+                        conjurations.push({
+                            count: conjCard.copies || 1,
+                            card: Object.assign({}, conjCard),
+                            id: conj.stub
+                        });
+                    }
+                }
+            });
+        }
+    });
+
+    return conjurations;
+}
+
 export default function (state = { decks: [], cards: {} }, action) {
     let newState;
     switch (action.type) {
@@ -352,46 +397,7 @@ export default function (state = { decks: [], cards: {} }, action) {
             deck.cards[mainIndex] = tempCard;
 
             // Rebuild conjurations based on current phoenixborn and main deck cards
-            deck.conjurations = [];
-
-            // Add conjurations from phoenixborn
-            if (deck.phoenixborn && deck.phoenixborn.length > 0) {
-                const pbCard = deck.phoenixborn[0].card || deck.phoenixborn[0];
-                if (pbCard.conjurations) {
-                    pbCard.conjurations.forEach((conj) => {
-                        if (!deck.conjurations.some((c) => c.id === conj.stub)) {
-                            const conjCard = state.cards[conj.stub];
-                            if (conjCard) {
-                                deck.conjurations.push({
-                                    count: conjCard.copies || 1,
-                                    card: Object.assign({}, conjCard),
-                                    id: conj.stub
-                                });
-                            }
-                        }
-                    });
-                }
-            }
-
-            // Add conjurations from cards in main deck
-            deck.cards.forEach((deckCard) => {
-                // Use deckCard.card.conjurations (the actual card data) not deckCard.conjurations
-                const cardData = deckCard.card || state.cards[deckCard.id];
-                if (cardData && cardData.conjurations) {
-                    cardData.conjurations.forEach((conj) => {
-                        if (!deck.conjurations.some((c) => c.id === conj.stub)) {
-                            const conjCard = state.cards[conj.stub];
-                            if (conjCard) {
-                                deck.conjurations.push({
-                                    count: conjCard.copies || 1,
-                                    card: Object.assign({}, conjCard),
-                                    id: conj.stub
-                                });
-                            }
-                        }
-                    });
-                }
-            });
+            deck.conjurations = rebuildConjurations(deck, state.cards);
 
             newState = Object.assign({}, state, {
                 selectedDeck: deck,
