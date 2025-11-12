@@ -6,8 +6,11 @@ import CardListImg from './CardListImg';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faImage, faList } from '@fortawesome/free-solid-svg-icons';
 import DeckDice from './DeckDice';
+import { useDispatch } from 'react-redux';
+import { swapDeckCard, changeCardQuantity } from '../../redux/actions';
 
 const DeckSummary = ({ deck, editMode }) => {
+    const dispatch = useDispatch();
 
     const [radioValue, setRadioValue] = useState(false);
     const [magicHover, setMagicHover] = useState('');
@@ -37,6 +40,16 @@ const DeckSummary = ({ deck, editMode }) => {
 
     const combinedCards = deck.cards.concat(deck.conjurations);
     const cardCount = deck.cards.reduce((agg, val) => agg += val.count, 0);
+    const isDraftMode = deck.mode === 'draft';
+
+    const handleSwapCard = (sideboardCardId, mainCardId) => {
+        dispatch(swapDeckCard(sideboardCardId, mainCardId));
+    };
+
+    const handleQuantityChange = (cardId, newQuantity, isSideboard) => {
+        dispatch(changeCardQuantity(cardId, newQuantity, isSideboard));
+    };
+
     return (
         <Col className='deck-summary'>
             <DeckDice
@@ -96,11 +109,28 @@ const DeckSummary = ({ deck, editMode }) => {
                 ) : (
                     <>
                         <div className='basic-title'>Main</div>
-                        <CardListText deckCards={combinedCards} highlight={magicHover} onFFClick={onFFClick} />
+                        <CardListText
+                            deckCards={combinedCards}
+                            highlight={magicHover}
+                            onFFClick={onFFClick}
+                            isSideboard={false}
+                            isDraftMode={isDraftMode}
+                            onQuantityChange={handleQuantityChange}
+                            editMode={editMode}
+                        />
                         {deck.sideboard && deck.sideboard.length > 0 && (
                             <>
                                 <div className='basic-title'>Sideboard</div>
-                                <CardListText deckCards={deck.sideboard} highlight={magicHover} />
+                                <CardListText
+                                    deckCards={deck.sideboard}
+                                    highlight={magicHover}
+                                    isSideboard={true}
+                                    isDraftMode={isDraftMode}
+                                    mainDeckCards={deck.cards}
+                                    onSwapCard={handleSwapCard}
+                                    onQuantityChange={handleQuantityChange}
+                                    editMode={editMode}
+                                />
                             </>
                         )}
                     </>

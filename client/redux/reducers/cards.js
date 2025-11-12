@@ -333,6 +333,108 @@ export default function (state = { decks: [], cards: {} }, action) {
             }
 
             return newState;
+        case 'SWAP_DECK_CARD':
+            if (!state.selectedDeck) {
+                return state;
+            }
+
+            const deck = Object.assign({}, state.selectedDeck);
+            const sideboardIndex = deck.sideboard.findIndex(c => c.id === action.sideboardCardId);
+            const mainIndex = deck.cards.findIndex(c => c.id === action.mainCardId);
+
+            if (sideboardIndex === -1 || mainIndex === -1) {
+                return state;
+            }
+
+            // Swap the cards
+            const tempCard = deck.sideboard[sideboardIndex];
+            deck.sideboard[sideboardIndex] = deck.cards[mainIndex];
+            deck.cards[mainIndex] = tempCard;
+
+            // Rebuild conjurations based on current phoenixborn and main deck cards
+            deck.conjurations = [];
+
+            // Add conjurations from phoenixborn
+            if (deck.phoenixborn && deck.phoenixborn.length > 0) {
+                const pbCard = deck.phoenixborn[0].card || deck.phoenixborn[0];
+                if (pbCard.conjurations) {
+                    pbCard.conjurations.forEach((conj) => {
+                        if (!deck.conjurations.some((c) => c.id === conj.stub)) {
+                            const conjCard = state.cards[conj.stub];
+                            if (conjCard) {
+                                deck.conjurations.push({
+                                    count: conjCard.copies || 1,
+                                    card: Object.assign({}, conjCard),
+                                    id: conj.stub
+                                });
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Add conjurations from cards in main deck
+            deck.cards.forEach((deckCard) => {
+                // Use deckCard.card.conjurations (the actual card data) not deckCard.conjurations
+                const cardData = deckCard.card || state.cards[deckCard.id];
+                if (cardData && cardData.conjurations) {
+                    cardData.conjurations.forEach((conj) => {
+                        if (!deck.conjurations.some((c) => c.id === conj.stub)) {
+                            const conjCard = state.cards[conj.stub];
+                            if (conjCard) {
+                                deck.conjurations.push({
+                                    count: conjCard.copies || 1,
+                                    card: Object.assign({}, conjCard),
+                                    id: conj.stub
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+
+            newState = Object.assign({}, state, {
+                selectedDeck: deck,
+                deckSaved: false
+            });
+
+            processDecks([newState.selectedDeck], state);
+
+            return newState;
+        case 'CHANGE_CARD_QUANTITY':
+            if (!state.selectedDeck) {
+                return state;
+            }
+
+            const quantityDeck = Object.assign({}, state.selectedDeck);
+
+            // Clone the appropriate array (cards or sideboard)
+            if (action.isSideboard) {
+                quantityDeck.sideboard = [...quantityDeck.sideboard];
+            } else {
+                quantityDeck.cards = [...quantityDeck.cards];
+            }
+
+            const cardList = action.isSideboard ? quantityDeck.sideboard : quantityDeck.cards;
+            const cardIndex = cardList.findIndex(c => c.id === action.cardId);
+
+            if (cardIndex === -1) {
+                return state;
+            }
+
+            // Clone the card object and update the quantity (ensure it's between 1 and 3)
+            cardList[cardIndex] = Object.assign({}, cardList[cardIndex], {
+                count: Math.max(1, Math.min(3, action.newQuantity))
+            });
+
+            newState = Object.assign({}, state, {
+                selectedDeck: quantityDeck,
+                deckSaved: false
+            });
+
+            processDecks([newState.selectedDeck], state);
+
+            return newState;
         case 'DECK_DUPLICATED':
             decks = state.decks;
             decks.unshift(action.response.deck);

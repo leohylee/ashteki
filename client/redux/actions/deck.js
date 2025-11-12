@@ -68,6 +68,23 @@ export function updateDeck(deck) {
     };
 }
 
+export function swapDeckCard(sideboardCardId, mainCardId) {
+    return {
+        type: 'SWAP_DECK_CARD',
+        sideboardCardId: sideboardCardId,
+        mainCardId: mainCardId
+    };
+}
+
+export function changeCardQuantity(cardId, newQuantity, isSideboard) {
+    return {
+        type: 'CHANGE_CARD_QUANTITY',
+        cardId: cardId,
+        newQuantity: newQuantity,
+        isSideboard: isSideboard
+    };
+}
+
 export function duplicateDeck(deck) {
     const newDeck = Object.assign({}, deck);
     newDeck._id = null;

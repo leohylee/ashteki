@@ -19,6 +19,7 @@ class TextArea extends React.Component {
                         value={this.props.value}
                         onChange={this.props.onChange}
                         onBlur={this.props.onBlur}
+                        readOnly={this.props.readOnly}
                     />
                     {this.props.validationMessage ? (
                         <span className='help-block'>{this.props.validationMessage} </span>
@@ -40,6 +41,7 @@ TextArea.propTypes = {
     onBlur: PropTypes.func,
     onChange: PropTypes.func,
     placeholder: PropTypes.string,
+    readOnly: PropTypes.bool,
     rows: PropTypes.string,
     validationMessage: PropTypes.string,
     value: PropTypes.string

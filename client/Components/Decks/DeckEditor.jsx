@@ -76,6 +76,39 @@ class InnerDeckEditor extends React.Component {
         }
     }
 
+    componentDidUpdate(prevProps) {
+        // Update text areas when deck changes from external sources (like swap action)
+        if (this.props.deck && prevProps.deck !== this.props.deck) {
+            let cardList = '';
+            if (this.props.deck.cards) {
+                _.each(this.props.deck.cards, (card) => {
+                    cardList += this.getCardListEntry(card.count, card.card, card.ff);
+                });
+            }
+
+            let diceList = '';
+            if (this.props.deck.dicepool) {
+                _.each(this.props.deck.dicepool, (diceCount) => {
+                    diceList += this.getDiceListEntry(diceCount);
+                });
+            }
+
+            let sideboardList = '';
+            if (this.props.deck.sideboard) {
+                _.each(this.props.deck.sideboard, (card) => {
+                    sideboardList += this.getCardListEntry(card.count, card.card);
+                });
+            }
+
+            this.setState({
+                cardList: cardList,
+                diceList: diceList,
+                sideboardList: sideboardList,
+                deck: this.copyDeck(this.props.deck)
+            });
+        }
+    }
+
     // XXX One could argue this is a bit hacky, because we're updating the innards of the deck object, react doesn't update components that use it unless we change the reference itself
     copyDeck(deck) {
         if (!deck) {
@@ -622,7 +655,7 @@ class InnerDeckEditor extends React.Component {
                         <>
                             <h4>
                                 Click the button below to pick a card from 4 random options.
-                                You can also add up to 3 sideboard cards to your notes.
+                                You can also add up to 3 sideboard cards.
                             </h4>
                             <Row>
                                 <Col sm='3'></Col>
@@ -646,7 +679,7 @@ class InnerDeckEditor extends React.Component {
                                 </Col>
                             </Row>
                         </>
-                    ) : (
+                    ) : this.state.deck.mode !== 'draft' ? (
                         <>
                             <h4>
                                 You can type card names and quantities into the box below, or add them using
@@ -684,18 +717,20 @@ class InnerDeckEditor extends React.Component {
                                 </Col>
                             </Row>
                         </>
-                    )}
+                    ) : null}
                     <TextArea
                         label='Cards'
                         rows='4'
                         value={this.state.cardList}
                         onChange={this.onCardListChange.bind(this)}
+                        readOnly={this.state.deck.mode === 'draft'}
                     />
                     <TextArea
                         label='Sideboard'
                         rows='4'
                         value={this.state.sideboardList}
                         onChange={this.onSideboardListChange.bind(this)}
+                        readOnly={this.state.deck.mode === 'draft'}
                     />
                     <h4>Enter dice quantities into the box below, one per line (Charm, Ceremonial, Illusion, Natural, Divine, Sympathy, Time)</h4>
                     <TextArea

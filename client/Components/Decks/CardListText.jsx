@@ -4,7 +4,7 @@ import { faLink, faStarOfLife } from '@fortawesome/free-solid-svg-icons';
 import CardImage from '../GameBoard/CardImage';
 import classNames from 'classnames';
 
-const CardListText = ({ deckCards, highlight, onFFClick }) => {
+const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMode, mainDeckCards, onSwapCard, onQuantityChange, editMode }) => {
     let [zoomCard, setZoomCard] = useState(null);
     let [mousePos, setMousePosition] = useState({ x: 0, y: 0 });
 
@@ -47,7 +47,7 @@ const CardListText = ({ deckCards, highlight, onFFClick }) => {
                         className='card-ff'
                         icon={faStarOfLife}
                         title='This card is in your first five'
-                        onClick={() => onFFClick(card.id)}
+                        onClick={() => onFFClick && onFFClick(card.id)}
                     />
                 }
                 const linkClasses = classNames('card-link', {
@@ -55,6 +55,61 @@ const CardListText = ({ deckCards, highlight, onFFClick }) => {
                     highlight: usesHighlightMagic(card)
                 });
                 const countClass = card.count > 3 && !card.card?.type.includes('Conjur') ? 'invalidCount' : '';
+
+                // Add quantity controls for draft mode (only in edit mode)
+                let quantityControls = null;
+                if (editMode && isDraftMode && onQuantityChange && !card.card?.type.includes('Conjur')) {
+                    quantityControls = (
+                        <span style={{ marginLeft: '5px' }}>
+                            <button
+                                onClick={() => onQuantityChange(card.id, card.count - 1, isSideboard)}
+                                disabled={card.count <= 1}
+                                style={{
+                                    padding: '0 6px',
+                                    fontSize: '0.8em',
+                                    cursor: card.count <= 1 ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                -
+                            </button>
+                            <button
+                                onClick={() => onQuantityChange(card.id, card.count + 1, isSideboard)}
+                                disabled={card.count >= 3}
+                                style={{
+                                    padding: '0 6px',
+                                    fontSize: '0.8em',
+                                    marginLeft: '2px',
+                                    cursor: card.count >= 3 ? 'not-allowed' : 'pointer'
+                                }}
+                            >
+                                +
+                            </button>
+                        </span>
+                    );
+                }
+
+                // Add swap dropdown for sideboard cards in draft mode (only in edit mode)
+                let swapControl = null;
+                if (editMode && isSideboard && isDraftMode && mainDeckCards && mainDeckCards.length > 0 && onSwapCard) {
+                    swapControl = (
+                        <select
+                            onChange={(e) => {
+                                if (e.target.value) {
+                                    onSwapCard(card.id, e.target.value);
+                                    e.target.value = ''; // Reset selection
+                                }
+                            }}
+                            style={{ marginLeft: '10px', fontSize: '0.8em' }}
+                        >
+                            <option value="">Swap with...</option>
+                            {mainDeckCards.map((mainCard) => (
+                                <option key={mainCard.id} value={mainCard.id}>
+                                    {mainCard.card.name}
+                                </option>
+                            ))}
+                        </select>
+                    );
+                }
 
                 cards.push(
                     <div key={'text-' + card.card.id}>
@@ -79,6 +134,8 @@ const CardListText = ({ deckCards, highlight, onFFClick }) => {
                         &nbsp;
                         {chainedIcon}
                         {ffIcon}
+                        {quantityControls}
+                        {swapControl}
                     </div>
                 );
                 count += parseInt(card.count);
