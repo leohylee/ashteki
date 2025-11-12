@@ -362,6 +362,11 @@ class InnerDeckEditor extends React.Component {
                     return false;
                 }
 
+                // Exclude cards that have already been picked in this draft
+                if (this.state.pickedCardStubs.includes(card.stub)) {
+                    return false;
+                }
+
                 return true;
             }
         );
@@ -406,14 +411,15 @@ class InnerDeckEditor extends React.Component {
 
         deck = this.copyDeck(deck);
 
-        // Clear the draft options after selection so next click generates new cards
+        // Track this card as picked and clear the draft options after selection
         // Reset refresh counter and locked cards
         this.setState({
             cardList: cardList,
             showDraftPicker: false,
             draftCardOptions: [],
             refreshesRemaining: 3,
-            lockedCardIndices: []
+            lockedCardIndices: [],
+            pickedCardStubs: [...this.state.pickedCardStubs, selectedCard.stub]
         });
 
         this.props.updateDeck(deck);
@@ -429,14 +435,15 @@ class InnerDeckEditor extends React.Component {
         deck.notes = newNotes;
         deck = this.copyDeck(deck);
 
-        // Clear the draft options after selection and decrement sideboard picks
+        // Track this card as picked, clear the draft options after selection, and decrement sideboard picks
         this.setState({
             showSideboardPicker: false,
             draftCardOptions: [],
             refreshesRemaining: 3,
             lockedCardIndices: [],
             deck: deck,
-            sideboardPicksRemaining: this.state.sideboardPicksRemaining - 1
+            sideboardPicksRemaining: this.state.sideboardPicksRemaining - 1,
+            pickedCardStubs: [...this.state.pickedCardStubs, selectedCard.stub]
         });
 
         this.props.updateDeck(deck);

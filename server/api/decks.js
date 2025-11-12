@@ -221,7 +221,7 @@ module.exports.init = function (server) {
                 });
 
                 await gameService
-                    .findByUserName(req.user.username, {})
+                    .findByUserName(req.user.username, { includeDraft: true })
                     .then((games) => {
                         games.forEach((game) => {
                             const player = game.players.find(p => p.name === req.user.username);
