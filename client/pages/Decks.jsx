@@ -186,13 +186,7 @@ const DecksComponent = ({ onDeckSelected }) => {
                                 <DeckList decks={myDecks} showWinRate={true} />
                                 {(myDecks?.length > 0) && (
                                     <div className='pagination-wrapper'>
-                                        <Pagination
-                                            className='pager'
-                                            totalPages={numDecks / 8}
-                                            currentPage={pageNumber}
-                                            showMax={7}
-                                            prevNext={false}
-                                        >
+                                        <Pagination className='pager'>
                                             {Array.from({ length: Math.ceil(numDecks / 8) }, (_, i) => (
                                                 <Pagination.Item
                                                     key={i + 1}
