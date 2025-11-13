@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import _ from 'underscore';
 import { connect } from 'react-redux';
-import { Form, Col, Row, Button } from 'react-bootstrap';
+import { Form, Col, Row, Button, Modal } from 'react-bootstrap';
 import { Typeahead } from 'react-bootstrap-typeahead';
 import TextArea from '../Form/TextArea.jsx';
 import DraftCardPicker from './DraftCardPicker.jsx';
@@ -34,7 +34,8 @@ class InnerDeckEditor extends React.Component {
                 lockedCardIndices: [],
                 sideboardPicksRemaining: 3,
                 pickedCardStubs: []
-            }
+            },
+            showConfirmationModal: false
         };
     }
 
@@ -529,6 +530,14 @@ class InnerDeckEditor extends React.Component {
     }
 
     onOpenSideboardPicker() {
+        // Show confirmation modal first
+        this.setState({ showConfirmationModal: true });
+    }
+
+    onConfirmStageCompletion() {
+        // User confirmed they completed the stage
+        this.setState({ showConfirmationModal: false });
+
         // For edit mode (mode !== 'AddDraft'), use getRandomSideboardCards and give 5 refreshes
         // For add draft mode, use getRandomCards and give 3 refreshes
         // In both modes, reuse existing cards if they exist
@@ -558,6 +567,11 @@ class InnerDeckEditor extends React.Component {
                 refreshesRemaining: refreshCount
             });
         }
+    }
+
+    onCancelStageCompletion() {
+        // User cancelled - just close the modal
+        this.setState({ showConfirmationModal: false });
     }
 
     onRefreshSideboardCards() {
@@ -930,6 +944,34 @@ class InnerDeckEditor extends React.Component {
                         lockedIndices={this.state.draftState.lockedCardIndices}
                     />
                 )}
+                {/* Confirmation modal for stage completion */}
+                <Modal
+                    show={this.state.showConfirmationModal}
+                    onHide={this.onCancelStageCompletion.bind(this)}
+                    backdrop="static"
+                    keyboard={true}
+                >
+                    <Modal.Header closeButton>
+                        <Modal.Title>Stage Completion Confirmation</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <p>Have you completed the current stage?</p>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button
+                            variant="secondary"
+                            onClick={this.onCancelStageCompletion.bind(this)}
+                        >
+                            No
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={this.onConfirmStageCompletion.bind(this)}
+                        >
+                            Yes
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
             </div>
         );
     }

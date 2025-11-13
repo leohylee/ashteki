@@ -372,6 +372,21 @@ export default function (state = { decks: [], cards: {} }, action) {
                 phoenixborn: card.phoenixborn
             }));
 
+            var defaultNotes = `Progress: Standard 1
+Attempts: 3/3
+
+Chimera:
+The Corpse of Viros (Fury)
+The Corpse of Viros (Shadow)
+The Frostwild Scourge (Storm)
+The Frostwild Scourge (Mighty)
+The Blight of Neverset (Bloom)
+The Blight of Neverset (Thorn)
+The Siege of Lordswall (Horde)
+The Siege of Lordswall (Death)
+The Spawn of Shadowreck (Lair)
+The Spawn of Shadowreck (Horror)`;
+
             var newDraftDeck = {
                 name: 'New Draft Deck',
                 cards: [],
@@ -379,7 +394,8 @@ export default function (state = { decks: [], cards: {} }, action) {
                 phoenixborn: [randomPhoenixborn],
                 dicepool: [],
                 sideboard: phoenixbornCards,
-                mode: 'draft'
+                mode: 'draft',
+                notes: defaultNotes
             };
 
             newState = Object.assign({}, state, {
