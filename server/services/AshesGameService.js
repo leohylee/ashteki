@@ -182,6 +182,12 @@ class GameService {
         if (!options.solo) {
             findSpec.solo = { $ne: true };
         }
+        if (options.includeDraft) {
+            // Remove both draft and solo exclusions when explicitly requested (for deck win rate calculation)
+            // This allows draft games (which can have solo=true when against Chimera) to be included
+            delete findSpec.gameFormat;
+            delete findSpec.solo;
+        }
         if (options.gameType) {
             if (options.gameType === 'solo') {
                 findSpec.solo = true;

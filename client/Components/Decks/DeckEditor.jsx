@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import _ from 'underscore';
-import $ from 'jquery';
 import { connect } from 'react-redux';
 import { Form, Col, Row, Button } from 'react-bootstrap';
 import { Typeahead } from 'react-bootstrap-typeahead';
@@ -16,18 +15,36 @@ class InnerDeckEditor extends React.Component {
         this.state = {
             cardList: '',
             diceList: '',
+            sideboardList: '',
             notes: '',
             deck: this.copyDeck(props.deck),
             numberToAdd: 1,
+            cardToAdd: null,
             validation: {
                 deckname: '',
                 cardToAdd: ''
             },
-            showDraftPicker: false,
-            draftCardOptions: [],
-            refreshesRemaining: 3,
-            lockedCardIndices: []
+            // Draft mode state grouped together
+            draftState: {
+                showDraftPicker: false,
+                showSideboardPicker: false,
+                draftCardOptions: [],
+                refreshesRemaining: 3,
+                lockedCardIndices: [],
+                sideboardPicksRemaining: 3,
+                pickedCardStubs: []
+            }
         };
+    }
+
+    // Helper method to update draft state
+    updateDraftState(updates) {
+        this.setState({
+            draftState: {
+                ...this.state.draftState,
+                ...updates
+            }
+        });
     }
 
     handleCancelClick() {
@@ -61,6 +78,42 @@ class InnerDeckEditor extends React.Component {
 
             this.setState({ diceList: diceList });
         }
+
+        let sideboardList = '';
+        if (this.props.deck && this.props.deck.sideboard) {
+            _.each(this.props.deck.sideboard, (card) => {
+                sideboardList += this.getCardListEntry(card.count, card.card);
+            });
+
+            this.setState({ sideboardList: sideboardList });
+        }
+    }
+
+    componentDidUpdate(prevProps) {
+        // Update text areas when deck changes from external sources (like swap action)
+        // Only update cardList and sideboardList which are read-only in draft mode
+        // Don't update diceList as it should always be editable
+        if (this.props.deck && prevProps.deck !== this.props.deck) {
+            let cardList = '';
+            if (this.props.deck.cards) {
+                _.each(this.props.deck.cards, (card) => {
+                    cardList += this.getCardListEntry(card.count, card.card, card.ff);
+                });
+            }
+
+            let sideboardList = '';
+            if (this.props.deck.sideboard) {
+                _.each(this.props.deck.sideboard, (card) => {
+                    sideboardList += this.getCardListEntry(card.count, card.card);
+                });
+            }
+
+            this.setState({
+                cardList: cardList,
+                sideboardList: sideboardList,
+                deck: this.copyDeck(this.props.deck)
+            });
+        }
     }
 
     // XXX One could argue this is a bit hacky, because we're updating the innards of the deck object, react doesn't update components that use it unless we change the reference itself
@@ -68,7 +121,8 @@ class InnerDeckEditor extends React.Component {
         if (!deck) {
             return {
                 name: 'New Deck',
-                phoenixborn: []
+                phoenixborn: [],
+                sideboard: []
             };
         }
 
@@ -81,7 +135,8 @@ class InnerDeckEditor extends React.Component {
             status: deck.status,
             notes: deck.notes,
             dicepool: deck.dicepool,
-            mode: deck.mode
+            mode: deck.mode,
+            sideboard: deck.sideboard || []
         };
     }
 
@@ -151,7 +206,7 @@ class InnerDeckEditor extends React.Component {
         _.each(split, (line) => {
             line = line.trim();
 
-            if (!$.isNumeric(line[0])) {
+            if (!line[0] || isNaN(line[0])) {
                 return;
             }
 
@@ -205,7 +260,7 @@ class InnerDeckEditor extends React.Component {
         _.each(split, (line) => {
             line = line.trim();
 
-            if (!$.isNumeric(line[0])) {
+            if (!line[0] || isNaN(line[0])) {
                 return;
             }
 
@@ -222,6 +277,45 @@ class InnerDeckEditor extends React.Component {
         deck = this.copyDeck(deck);
 
         this.setState({ diceList: event.target.value, deck: deck });
+        this.props.updateDeck(deck);
+    }
+
+    onSideboardListChange(event) {
+        event.preventDefault();
+
+        let deck = this.state.deck;
+        let split = event.target.value.split('\n');
+
+        deck.sideboard = [];
+
+        _.each(split, (line) => {
+            line = line.trim();
+
+            if (!line[0] || isNaN(line[0])) {
+                return;
+            }
+
+            let index = 0;
+            while (!isNaN(line[index]) || line[index] === 'x') {
+                index++;
+            }
+            let num = parseInt(line.substr(0, index));
+            let cardName = line.substr(index, line.length).trim();
+
+            let card = this.getCard(cardName);
+
+            if (card) {
+                deck.sideboard.push({
+                    count: num,
+                    card: card,
+                    id: card.stub
+                });
+            }
+        });
+
+        deck = this.copyDeck(deck);
+
+        this.setState({ sideboardList: event.target.value, deck: deck });
         this.props.updateDeck(deck);
     }
 
@@ -359,6 +453,11 @@ class InnerDeckEditor extends React.Component {
                     return false;
                 }
 
+                // Exclude cards that have already been picked in this draft
+                if (this.state.draftState.pickedCardStubs.includes(card.stub)) {
+                    return false;
+                }
+
                 return true;
             }
         );
@@ -370,12 +469,24 @@ class InnerDeckEditor extends React.Component {
 
     onOpenDraftPicker() {
         // Only generate new cards if we don't have any current options
-        const randomCards = this.state.draftCardOptions.length > 0
-            ? this.state.draftCardOptions
+        const randomCards = this.state.draftState.draftCardOptions.length > 0
+            ? this.state.draftState.draftCardOptions
             : this.getRandomCards(4);
 
-        this.setState({
+        this.updateDraftState({
             showDraftPicker: true,
+            draftCardOptions: randomCards
+        });
+    }
+
+    onOpenSideboardPicker() {
+        // Only generate new cards if we don't have any current options
+        const randomCards = this.state.draftState.draftCardOptions.length > 0
+            ? this.state.draftState.draftCardOptions
+            : this.getRandomCards(4);
+
+        this.updateDraftState({
+            showSideboardPicker: true,
             draftCardOptions: randomCards
         });
     }
@@ -391,23 +502,59 @@ class InnerDeckEditor extends React.Component {
 
         deck = this.copyDeck(deck);
 
-        // Clear the draft options after selection so next click generates new cards
+        // Track this card as picked and clear the draft options after selection
         // Reset refresh counter and locked cards
-        this.setState({
-            cardList: cardList,
+        this.setState({ cardList: cardList });
+        this.updateDraftState({
             showDraftPicker: false,
             draftCardOptions: [],
             refreshesRemaining: 3,
-            lockedCardIndices: []
+            lockedCardIndices: [],
+            pickedCardStubs: [...this.state.draftState.pickedCardStubs, selectedCard.stub]
+        });
+
+        this.props.updateDeck(deck);
+    }
+
+    onDraftSideboardCardSelected(selectedCard, quantity) {
+        // Add the card to sideboard array instead of notes
+        let deck = this.state.deck;
+
+        if (!deck.sideboard) {
+            deck.sideboard = [];
+        }
+
+        // Add card to sideboard
+        deck.sideboard.push({
+            count: quantity,
+            card: selectedCard,
+            id: selectedCard.stub
+        });
+
+        // Update the sideboard list text
+        let sideboardList = this.state.sideboardList;
+        sideboardList += this.getCardListEntry(quantity, selectedCard);
+
+        deck = this.copyDeck(deck);
+
+        // Track this card as picked, clear the draft options after selection, and decrement sideboard picks
+        this.setState({ sideboardList: sideboardList, deck: deck });
+        this.updateDraftState({
+            showSideboardPicker: false,
+            draftCardOptions: [],
+            refreshesRemaining: 3,
+            lockedCardIndices: [],
+            sideboardPicksRemaining: this.state.draftState.sideboardPicksRemaining - 1,
+            pickedCardStubs: [...this.state.draftState.pickedCardStubs, selectedCard.stub]
         });
 
         this.props.updateDeck(deck);
     }
 
     onRefreshDraftCards() {
-        if (this.state.refreshesRemaining > 0) {
-            const currentCards = this.state.draftCardOptions;
-            const lockedIndices = this.state.lockedCardIndices;
+        if (this.state.draftState.refreshesRemaining > 0) {
+            const currentCards = this.state.draftState.draftCardOptions;
+            const lockedIndices = this.state.draftState.lockedCardIndices;
 
             // Generate new cards for unlocked positions
             const newRandomCards = this.getRandomCards(4 - lockedIndices.length);
@@ -425,30 +572,37 @@ class InnerDeckEditor extends React.Component {
                 }
             }
 
-            this.setState({
+            this.updateDraftState({
                 draftCardOptions: newCards,
-                refreshesRemaining: this.state.refreshesRemaining - 1
+                refreshesRemaining: this.state.draftState.refreshesRemaining - 1
             });
         }
     }
 
     onToggleLockCard(index) {
-        const lockedIndices = [...this.state.lockedCardIndices];
+        const lockedIndices = [...this.state.draftState.lockedCardIndices];
         const indexPos = lockedIndices.indexOf(index);
 
         if (indexPos > -1) {
             // Unlock card
-            this.setState({ lockedCardIndices: [] });
+            this.updateDraftState({ lockedCardIndices: [] });
         } else {
             // Lock card (only one card can be locked at a time)
-            this.setState({ lockedCardIndices: [index] });
+            this.updateDraftState({ lockedCardIndices: [index] });
         }
     }
 
     onCloseDraftPicker() {
         // Keep the draftCardOptions when closing without selecting
-        this.setState({
+        this.updateDraftState({
             showDraftPicker: false
+        });
+    }
+
+    onCloseSideboardPicker() {
+        // Keep the draftCardOptions when closing without selecting
+        this.updateDraftState({
+            showSideboardPicker: false
         });
     }
 
@@ -507,6 +661,7 @@ class InnerDeckEditor extends React.Component {
                         <>
                             <h4>
                                 Click the button below to pick a card from 4 random options.
+                                You can also add up to 3 sideboard cards.
                             </h4>
                             <Row>
                                 <Col sm='3'></Col>
@@ -518,10 +673,19 @@ class InnerDeckEditor extends React.Component {
                                     >
                                         Pick a Card
                                     </Button>
+                                    <Button
+                                        variant='secondary'
+                                        onClick={this.onOpenSideboardPicker.bind(this)}
+                                        className='def'
+                                        style={{ marginLeft: '10px' }}
+                                        disabled={this.state.draftState.sideboardPicksRemaining === 0}
+                                    >
+                                        Add Sideboard Card ({this.state.draftState.sideboardPicksRemaining} remaining)
+                                    </Button>
                                 </Col>
                             </Row>
                         </>
-                    ) : (
+                    ) : this.state.deck.mode !== 'draft' ? (
                         <>
                             <h4>
                                 You can type card names and quantities into the box below, or add them using
@@ -559,14 +723,22 @@ class InnerDeckEditor extends React.Component {
                                 </Col>
                             </Row>
                         </>
-                    )}
+                    ) : null}
                     <TextArea
                         label='Cards'
                         rows='4'
                         value={this.state.cardList}
                         onChange={this.onCardListChange.bind(this)}
+                        readOnly={this.state.deck.mode === 'draft'}
                     />
-                    <h4>Enter dice quantities into the box below, one per line e.g. 3 Charm</h4>
+                    <TextArea
+                        label='Sideboard'
+                        rows='4'
+                        value={this.state.sideboardList}
+                        onChange={this.onSideboardListChange.bind(this)}
+                        readOnly={this.state.deck.mode === 'draft'}
+                    />
+                    <h4>Enter dice quantities into the box below, one per line (Charm, Ceremonial, Illusion, Natural, Divine, Sympathy, Time)</h4>
                     <TextArea
                         label='Dice'
                         rows='4'
@@ -598,16 +770,28 @@ class InnerDeckEditor extends React.Component {
                     </div>
                 </Form>
                 {this.props.mode === 'AddDraft' && (
-                    <DraftCardPicker
-                        show={this.state.showDraftPicker}
-                        cards={this.state.draftCardOptions}
-                        onCardSelected={this.onDraftCardSelected.bind(this)}
-                        onClose={this.onCloseDraftPicker.bind(this)}
-                        onRefresh={this.onRefreshDraftCards.bind(this)}
-                        refreshesRemaining={this.state.refreshesRemaining}
-                        onToggleLock={this.onToggleLockCard.bind(this)}
-                        lockedIndices={this.state.lockedCardIndices}
-                    />
+                    <>
+                        <DraftCardPicker
+                            show={this.state.draftState.showDraftPicker}
+                            cards={this.state.draftState.draftCardOptions}
+                            onCardSelected={this.onDraftCardSelected.bind(this)}
+                            onClose={this.onCloseDraftPicker.bind(this)}
+                            onRefresh={this.onRefreshDraftCards.bind(this)}
+                            refreshesRemaining={this.state.draftState.refreshesRemaining}
+                            onToggleLock={this.onToggleLockCard.bind(this)}
+                            lockedIndices={this.state.draftState.lockedCardIndices}
+                        />
+                        <DraftCardPicker
+                            show={this.state.draftState.showSideboardPicker}
+                            cards={this.state.draftState.draftCardOptions}
+                            onCardSelected={this.onDraftSideboardCardSelected.bind(this)}
+                            onClose={this.onCloseSideboardPicker.bind(this)}
+                            onRefresh={this.onRefreshDraftCards.bind(this)}
+                            refreshesRemaining={this.state.draftState.refreshesRemaining}
+                            onToggleLock={this.onToggleLockCard.bind(this)}
+                            lockedIndices={this.state.draftState.lockedCardIndices}
+                        />
+                    </>
                 )}
             </div>
         );

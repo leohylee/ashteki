@@ -14,7 +14,7 @@ const DeckDice = ({ deck, onDieClick, onDieHover, size }) => {
                     for (let i = 0; i < diceCount.count; i++) {
                         diceToRender.push(
                             <DieIcon
-                                // key={deck._id + 'die' + i}
+                                key={`${deck._id}-die-${diceCount.magic}-${i}`}
                                 die={{ magic: diceCount.magic, level: 'power' }}
                                 onClick={() => onDieClick && onDieClick({ magic: diceCount.magic })}
                                 onMouseOver={() => onDieHover && onDieHover({ magic: diceCount.magic })}
@@ -25,7 +25,7 @@ const DeckDice = ({ deck, onDieClick, onDieHover, size }) => {
                 });
         }
         for (let i = diceToRender.length; i < 10; i++) {
-            diceToRender.push(<DieSlot />);
+            diceToRender.push(<DieSlot key={`${deck._id}-slot-${i}`} />);
         }
         return diceToRender;
     };

@@ -43,6 +43,18 @@ function processDecks(decks, state) {
             card: Object.assign({}, state.cards[card.id]),
             id: card.id
         }));
+
+        // Process sideboard cards if they exist
+        if (deck.sideboard && deck.sideboard.length > 0) {
+            deck.sideboard = deck.sideboard.map((card) => ({
+                count: card.count,
+                card: Object.assign({}, state.cards[card.id]),
+                id: card.id
+            }));
+        } else {
+            deck.sideboard = [];
+        }
+
         let hasConjurations = checkConjurations(deck);
         let tenDice = 10 === deck.dicepool.reduce((acc, d) => acc + d.count, 0);
 
@@ -84,6 +96,51 @@ function checkConjurations(deck) {
         .map((c) => c.stub);
     let result = cons.reduce((a, stub) => a && deck.conjurations.some((c) => c.id === stub), true);
     return result;
+}
+
+// Helper function to rebuild conjurations from phoenixborn and main deck cards
+function rebuildConjurations(deck, allCards) {
+    const conjurations = [];
+
+    // Add conjurations from phoenixborn
+    if (deck.phoenixborn && deck.phoenixborn.length > 0) {
+        const pbCard = deck.phoenixborn[0].card || deck.phoenixborn[0];
+        if (pbCard.conjurations) {
+            pbCard.conjurations.forEach((conj) => {
+                if (!conjurations.some((c) => c.id === conj.stub)) {
+                    const conjCard = allCards[conj.stub];
+                    if (conjCard) {
+                        conjurations.push({
+                            count: conjCard.copies || 1,
+                            card: Object.assign({}, conjCard),
+                            id: conj.stub
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    // Add conjurations from cards in main deck
+    deck.cards.forEach((deckCard) => {
+        const cardData = deckCard.card || allCards[deckCard.id];
+        if (cardData && cardData.conjurations) {
+            cardData.conjurations.forEach((conj) => {
+                if (!conjurations.some((c) => c.id === conj.stub)) {
+                    const conjCard = allCards[conj.stub];
+                    if (conjCard) {
+                        conjurations.push({
+                            count: conjCard.copies || 1,
+                            card: Object.assign({}, conjCard),
+                            id: conj.stub
+                        });
+                    }
+                }
+            });
+        }
+    });
+
+    return conjurations;
 }
 
 export default function (state = { decks: [], cards: {} }, action) {
@@ -319,6 +376,69 @@ export default function (state = { decks: [], cards: {} }, action) {
             if (newState.selectedDeck) {
                 processDecks([newState.selectedDeck], state);
             }
+
+            return newState;
+        case 'SWAP_DECK_CARD':
+            if (!state.selectedDeck) {
+                return state;
+            }
+
+            const deck = Object.assign({}, state.selectedDeck);
+            const sideboardIndex = deck.sideboard.findIndex(c => c.id === action.sideboardCardId);
+            const mainIndex = deck.cards.findIndex(c => c.id === action.mainCardId);
+
+            if (sideboardIndex === -1 || mainIndex === -1) {
+                return state;
+            }
+
+            // Swap the cards
+            const tempCard = deck.sideboard[sideboardIndex];
+            deck.sideboard[sideboardIndex] = deck.cards[mainIndex];
+            deck.cards[mainIndex] = tempCard;
+
+            // Rebuild conjurations based on current phoenixborn and main deck cards
+            deck.conjurations = rebuildConjurations(deck, state.cards);
+
+            newState = Object.assign({}, state, {
+                selectedDeck: deck,
+                deckSaved: false
+            });
+
+            processDecks([newState.selectedDeck], state);
+
+            return newState;
+        case 'CHANGE_CARD_QUANTITY':
+            if (!state.selectedDeck) {
+                return state;
+            }
+
+            const quantityDeck = Object.assign({}, state.selectedDeck);
+
+            // Clone the appropriate array (cards or sideboard)
+            if (action.isSideboard) {
+                quantityDeck.sideboard = [...quantityDeck.sideboard];
+            } else {
+                quantityDeck.cards = [...quantityDeck.cards];
+            }
+
+            const cardList = action.isSideboard ? quantityDeck.sideboard : quantityDeck.cards;
+            const cardIndex = cardList.findIndex(c => c.id === action.cardId);
+
+            if (cardIndex === -1) {
+                return state;
+            }
+
+            // Clone the card object and update the quantity (ensure it's between 1 and 3)
+            cardList[cardIndex] = Object.assign({}, cardList[cardIndex], {
+                count: Math.max(1, Math.min(3, action.newQuantity))
+            });
+
+            newState = Object.assign({}, state, {
+                selectedDeck: quantityDeck,
+                deckSaved: false
+            });
+
+            processDecks([newState.selectedDeck], state);
 
             return newState;
         case 'DECK_DUPLICATED':
