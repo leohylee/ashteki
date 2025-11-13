@@ -102,26 +102,32 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
                 }
 
                 // Add swap dropdown for sideboard cards in draft mode (only in edit mode)
+                // Exclude conjurations and conjured alteration spells from having swap controls
                 let swapControl = null;
                 if (editMode && isSideboard && isDraftMode && mainDeckCards && mainDeckCards.length > 0 && onSwapCard) {
-                    swapControl = (
-                        <select
-                            onChange={(e) => {
-                                if (e.target.value) {
-                                    onSwapCard(card.id, e.target.value);
-                                    e.target.value = ''; // Reset selection
-                                }
-                            }}
-                            style={SWAP_SELECT_STYLE}
-                        >
-                            <option value="">Swap with...</option>
-                            {mainDeckCards.map((mainCard) => (
-                                <option key={mainCard.id} value={mainCard.id}>
-                                    {mainCard.card.name}
-                                </option>
-                            ))}
-                        </select>
-                    );
+                    const isConjuration = card.card?.type === 'Conjuration' || card.card?.type === 'Conjured Alteration Spell';
+
+                    // Only show swap control for non-conjuration cards
+                    if (!isConjuration) {
+                        swapControl = (
+                            <select
+                                onChange={(e) => {
+                                    if (e.target.value) {
+                                        onSwapCard(card.id, e.target.value);
+                                        e.target.value = ''; // Reset selection
+                                    }
+                                }}
+                                style={SWAP_SELECT_STYLE}
+                            >
+                                <option value="">Swap with...</option>
+                                {mainDeckCards.map((mainCard) => (
+                                    <option key={mainCard.id} value={mainCard.id}>
+                                        {mainCard.card.name}
+                                    </option>
+                                ))}
+                            </select>
+                        );
+                    }
                 }
 
                 cards.push(

@@ -102,7 +102,7 @@ const DeckSummary = ({ deck, editMode }) => {
                         {deck.sideboard && deck.sideboard.length > 0 && (
                             <>
                                 <div className='basic-title'>Sideboard</div>
-                                <CardListImg deckCards={deck.sideboard} />
+                                <CardListImg deckCards={deck.sideboard.concat(deck.sideboardConjurations || [])} />
                             </>
                         )}
                     </>
@@ -122,7 +122,7 @@ const DeckSummary = ({ deck, editMode }) => {
                             <>
                                 <div className='basic-title'>Sideboard</div>
                                 <CardListText
-                                    deckCards={deck.sideboard}
+                                    deckCards={deck.sideboard.concat(deck.sideboardConjurations || [])}
                                     highlight={magicHover}
                                     isSideboard={true}
                                     isDraftMode={isDraftMode}

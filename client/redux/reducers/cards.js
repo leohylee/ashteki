@@ -38,22 +38,25 @@ function processDecks(decks, state) {
             };
         });
 
-        deck.conjurations = deck.conjurations.map((card) => ({
-            count: card.count,
-            card: Object.assign({}, state.cards[card.id]),
-            id: card.id
-        }));
-
         // Process sideboard cards if they exist
         if (deck.sideboard && deck.sideboard.length > 0) {
-            deck.sideboard = deck.sideboard.map((card) => ({
-                count: card.count,
-                card: Object.assign({}, state.cards[card.id]),
-                id: card.id
-            }));
+            deck.sideboard = deck.sideboard.map((card) => {
+                const c = Object.assign({}, state.cards[card.id]);
+                return {
+                    count: card.count,
+                    card: c,
+                    id: card.id,
+                    phoenixborn: c.phoenixborn
+                };
+            });
         } else {
             deck.sideboard = [];
         }
+
+        // Rebuild conjurations from phoenixborn, main deck, and sideboard cards
+        const { mainConjurations, sideboardConjurations } = rebuildConjurations(deck, state.cards);
+        deck.conjurations = mainConjurations;
+        deck.sideboardConjurations = sideboardConjurations;
 
         let hasConjurations = checkConjurations(deck);
         let tenDice = 10 === deck.dicepool.reduce((acc, d) => acc + d.count, 0);
@@ -98,49 +101,54 @@ function checkConjurations(deck) {
     return result;
 }
 
-// Helper function to rebuild conjurations from phoenixborn and main deck cards
+// Helper function to rebuild conjurations from phoenixborn, main deck, and sideboard cards
 function rebuildConjurations(deck, allCards) {
-    const conjurations = [];
+    const mainConjurations = [];
+    const sideboardConjurations = [];
 
-    // Add conjurations from phoenixborn
-    if (deck.phoenixborn && deck.phoenixborn.length > 0) {
-        const pbCard = deck.phoenixborn[0].card || deck.phoenixborn[0];
-        if (pbCard.conjurations) {
-            pbCard.conjurations.forEach((conj) => {
-                if (!conjurations.some((c) => c.id === conj.stub)) {
+    // Helper to recursively add conjurations
+    function addConjurationRecursive(cardData, targetArray) {
+        if (cardData && cardData.conjurations) {
+            cardData.conjurations.forEach((conj) => {
+                // Check if already added to either array
+                if (!mainConjurations.some((c) => c.id === conj.stub) &&
+                    !sideboardConjurations.some((c) => c.id === conj.stub)) {
                     const conjCard = allCards[conj.stub];
                     if (conjCard) {
-                        conjurations.push({
+                        targetArray.push({
                             count: conjCard.copies || 1,
                             card: Object.assign({}, conjCard),
                             id: conj.stub
                         });
+                        // Recursively add conjurations for this conjuration
+                        addConjurationRecursive(conjCard, targetArray);
                     }
                 }
             });
         }
     }
 
+    // Add conjurations from phoenixborn
+    if (deck.phoenixborn && deck.phoenixborn.length > 0) {
+        const pbCard = deck.phoenixborn[0].card || deck.phoenixborn[0];
+        addConjurationRecursive(pbCard, mainConjurations);
+    }
+
     // Add conjurations from cards in main deck
     deck.cards.forEach((deckCard) => {
         const cardData = deckCard.card || allCards[deckCard.id];
-        if (cardData && cardData.conjurations) {
-            cardData.conjurations.forEach((conj) => {
-                if (!conjurations.some((c) => c.id === conj.stub)) {
-                    const conjCard = allCards[conj.stub];
-                    if (conjCard) {
-                        conjurations.push({
-                            count: conjCard.copies || 1,
-                            card: Object.assign({}, conjCard),
-                            id: conj.stub
-                        });
-                    }
-                }
-            });
-        }
+        addConjurationRecursive(cardData, mainConjurations);
     });
 
-    return conjurations;
+    // Add conjurations from cards in sideboard
+    if (deck.sideboard && deck.sideboard.length > 0) {
+        deck.sideboard.forEach((deckCard) => {
+            const cardData = deckCard.card || allCards[deckCard.id];
+            addConjurationRecursive(cardData, sideboardConjurations);
+        });
+    }
+
+    return { mainConjurations, sideboardConjurations };
 }
 
 export default function (state = { decks: [], cards: {} }, action) {
@@ -350,12 +358,27 @@ export default function (state = { decks: [], cards: {} }, action) {
             );
             var randomPhoenixborn = allPhoenixborn[Math.floor(Math.random() * allPhoenixborn.length)];
 
+            // Find all cards that belong to this Phoenixborn
+            var phoenixbornCards = Object.values(state.cards).filter(
+                (card) => card.phoenixborn === randomPhoenixborn.name &&
+                         card.type !== 'Phoenixborn' &&
+                         card.type !== 'Conjuration' &&
+                         card.type !== 'Conjured Alteration Spell'
+            ).map((card) => ({
+                count: 1,
+                card: Object.assign({}, card),
+                id: card.stub,
+                conjurations: card.conjurations,
+                phoenixborn: card.phoenixborn
+            }));
+
             var newDraftDeck = {
                 name: 'New Draft Deck',
                 cards: [],
                 conjurations: [],
                 phoenixborn: [randomPhoenixborn],
                 dicepool: [],
+                sideboard: phoenixbornCards,
                 mode: 'draft'
             };
 
@@ -397,7 +420,9 @@ export default function (state = { decks: [], cards: {} }, action) {
             deck.cards[mainIndex] = tempCard;
 
             // Rebuild conjurations based on current phoenixborn and main deck cards
-            deck.conjurations = rebuildConjurations(deck, state.cards);
+            const { mainConjurations: swapMainConj, sideboardConjurations: swapSideboardConj } = rebuildConjurations(deck, state.cards);
+            deck.conjurations = swapMainConj;
+            deck.sideboardConjurations = swapSideboardConj;
 
             newState = Object.assign({}, state, {
                 selectedDeck: deck,
