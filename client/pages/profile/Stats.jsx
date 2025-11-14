@@ -12,7 +12,7 @@ class Stats extends React.Component {
         super(props);
         this.state = {
             selectedTerm: 0,
-            gameType: 'solo'
+            gameType: 'draft'
         };
         this.handleChange = this.handleChange.bind(this);
         this.handleTypeChange = this.handleTypeChange.bind(this);

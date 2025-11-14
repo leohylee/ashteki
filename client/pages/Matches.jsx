@@ -24,7 +24,7 @@ const Matches = () => {
     const username = useSelector((state) => state.account.user.username);
     const games = useSelector((state) => state.games.games);
     const [term, setTerm] = useState(1);
-    const [gameType, setGameType] = useState('solo');
+    const [gameType, setGameType] = useState('draft');
 
     useEffect(() => {
         dispatch(loadUserGames(term, gameType));
