@@ -1,7 +1,7 @@
 version: '3.5'
 services:
     lobby:
-        restart: always
+        restart: no
         build: .
         image: ashteki
         ports:
@@ -25,7 +25,7 @@ services:
             - '--inspect=0.0.0.0:9229'
             - '.'
     node:
-        restart: always
+        restart: no
         build: .
         image: ashteki
         ports:
@@ -47,7 +47,7 @@ services:
         image: mongo
         ports: 
             - '27017:27017'
-        restart: always
+        restart: no
         # environment:
         #     MONGO_INITDB_ROOT_USERNAME: root
         #     MONGO_INITDB_ROOT_PASSWORD: example
