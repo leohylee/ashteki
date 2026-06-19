@@ -200,9 +200,11 @@ const NewGame = ({ defaultGameType, defaultPrivate, defaultTimeLimit, onClosed }
                                             </Form.Control.Feedback>
 
                                             {['chimera', 'bot', 'dragonborn'].includes(newGameType) &&
-                                                soloOptions.map((option) =>
-                                                    getOptionToggle(option, formProps)
-                                                )
+                                                soloOptions.map((option) => (
+                                                    <React.Fragment key={option.name}>
+                                                        {getOptionToggle(option, formProps)}
+                                                    </React.Fragment>
+                                                ))
                                             }
                                             {newGameType === 'pvp' && (
                                                 <div className='mt-3'>

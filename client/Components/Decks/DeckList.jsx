@@ -42,7 +42,7 @@ const DeckList = ({ decks, onDeckSelected, showWinRate, allowInvalidSelection })
                     invalid: d.status && !d.status.legalToPlay
                 });
                 return (
-                    <div key={d.id} className={cardClasses}>
+                    <div key={d._id || d.id || index} className={cardClasses}>
                         <div
                             className='decklist-accordion-header card-header'
                             onClick={(event) => doClick(event, d)}

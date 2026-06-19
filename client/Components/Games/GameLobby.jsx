@@ -118,7 +118,7 @@ const GameLobby = ({ gameId }) => {
         <div className="container">
             <Row>
                 <Col md='6'>
-                    <div className={!homeDisplay && 'lobby-card'}>
+                    <div className={!homeDisplay ? 'lobby-card' : undefined}>
                         {!user && (
                             <div className='text-center'>
                                 <AlertPanel type='warning'>
