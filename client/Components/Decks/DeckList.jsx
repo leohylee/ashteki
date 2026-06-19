@@ -8,7 +8,7 @@ import { PatreonStatus } from '../../types';
 import DeckDice from './DeckDice';
 import './DeckList.scss';
 
-const DeckList = ({ decks, onDeckSelected, showWinRate }) => {
+const DeckList = ({ decks, onDeckSelected, showWinRate, allowInvalidSelection }) => {
     const user = useSelector((state) => state.account.user);
     const allowPremium = user?.patreon === PatreonStatus.Pledged || user?.permissions?.isSupporter;
 
@@ -19,6 +19,10 @@ const DeckList = ({ decks, onDeckSelected, showWinRate }) => {
     const dispatch = useDispatch();
 
     const doClick = (event, deck) => {
+        if (!allowInvalidSelection && deck.status && !deck.status.legalToPlay) {
+            return;
+        }
+
         dispatch(selectDeck(deck));
         (!deck.premium || allowPremium) && onDeckSelected && onDeckSelected(deck);
     };
@@ -34,10 +38,11 @@ const DeckList = ({ decks, onDeckSelected, showWinRate }) => {
                 const dice = d.mode !== 'chimera' && <DeckDice deck={d} />;
                 const isSelected = selectedDeck === d;
                 const cardClasses = classNames('decklist-card', 'card', {
-                    'selected-deck': isSelected
+                    'selected-deck': isSelected,
+                    invalid: d.status && !d.status.legalToPlay
                 });
                 return (
-                    <div key={d} className={cardClasses}>
+                    <div key={d.id} className={cardClasses}>
                         <div
                             className='decklist-accordion-header card-header'
                             onClick={(event) => doClick(event, d)}
@@ -61,15 +66,13 @@ const DeckList = ({ decks, onDeckSelected, showWinRate }) => {
                                             &nbsp;Premium
                                         </div>
                                     )}
+                                    {showWinRate && (
+                                        <div className='win-rate'>
+                                            Win rate: {d.winRate}%&nbsp;(of {d.played})
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                            {showWinRate && (
-                                <div className='win-rate'>
-                                    <span>{d.winRate}%</span>
-                                    <br />
-                                    (of {d.played})
-                                </div>
-                            )}
                         </div>
                     </div>
                 );

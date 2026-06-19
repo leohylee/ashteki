@@ -22,6 +22,7 @@ class ImportPrecons {
 
             for (let deck of this.loadDecks()) {
                 deck.preconGroup = 1;
+                deck.groupName = 'reborn';
                 let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
                 if (!existingDeck) {
                     console.log('Importing', deck.name);
@@ -34,6 +35,7 @@ class ImportPrecons {
 
             for (let deck of this.loadAPDecks()) {
                 deck.preconGroup = 2;
+                deck.groupName = 'aparty';
 
                 let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
                 if (!existingDeck) {
@@ -45,21 +47,9 @@ class ImportPrecons {
             console.log('Done importing AP decks');
             console.log('----------');
 
-            for (let deck of this.loadBBDecks()) {
-                deck.preconGroup = 3;
-
-                let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
-                if (!existingDeck) {
-                    console.log('Importing', deck.name);
-                    await this.deckService.createPrecon(deck);
-                }
-            }
-
-            console.log('Done importing BB decks');
-            console.log('----------');
-
             for (let deck of this.loadFADecks()) {
                 deck.preconGroup = 4;
+                deck.groupName = 'firstadventure';
 
                 let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
                 if (!existingDeck) {
@@ -73,6 +63,7 @@ class ImportPrecons {
 
             for (let deck of this.loadChimeraDecks()) {
                 deck.preconGroup = 5;
+                deck.groupName = 'chimera';
 
                 let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
                 if (!existingDeck) {
@@ -84,8 +75,24 @@ class ImportPrecons {
             console.log('Done importing Chimera decks');
             console.log('----------');
 
+            for (let deck of this.loadDragonbornDecks()) {
+                deck.preconGroup = 7;
+                deck.groupName = 'dragonborn';
+
+                let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
+                if (!existingDeck) {
+                    console.log('Importing', deck.name);
+                    await this.deckService.createPrecon(deck);
+                }
+            }
+
+            console.log('Done importing Dragonborn decks');
+            console.log('----------');
+
             for (let deck of this.loadPvEDecks()) {
                 deck.preconGroup = 6;
+                deck.groupName = 'pve';
+
                 let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
                 if (!existingDeck) {
                     console.log('Importing', deck.name);
@@ -96,20 +103,10 @@ class ImportPrecons {
             console.log('Done importing pvE precon decks');
             console.log('----------');
 
-            for (let deck of this.loadMSUDecks()) {
-                deck.preconGroup = 7;
-                let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
-                if (!existingDeck) {
-                    console.log('Importing', deck.name);
-                    await this.deckService.createPrecon(deck);
-                }
-            }
-
-            console.log('Done importing MSU precon decks');
-            console.log('----------');
-
             for (let deck of this.loadDualDuelDecks()) {
                 deck.preconGroup = 8;
+                deck.groupName = 'dualduel';
+
                 let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
                 if (!existingDeck) {
                     console.log('Importing', deck.name);
@@ -120,20 +117,10 @@ class ImportPrecons {
             console.log('Done importing Dual Duel decks');
             console.log('----------');
 
-            for (let deck of this.loadCorpseRebuildDecks()) {
-                deck.preconGroup = 9;
-                let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
-                if (!existingDeck) {
-                    console.log('Importing', deck.name);
-                    await this.deckService.createPrecon(deck);
-                }
-            }
-
-            console.log('Done importing Corpse Rebuild decks');
-            console.log('----------');
-
             for (let deck of this.loadOneCollectionDecks()) {
                 deck.preconGroup = 10;
+                deck.groupName = 'onecollection';
+
                 let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
                 if (!existingDeck) {
                     console.log('Importing', deck.name);
@@ -142,6 +129,20 @@ class ImportPrecons {
             }
 
             console.log('Done importing OneCollection decks');
+            console.log('----------');
+
+            for (let deck of this.loadAscendancyDecks()) {
+                deck.preconGroup = 11;
+                deck.groupName = 'ascendancy';
+
+                let existingDeck = await this.deckService.getPreconDeckById(deck.precon_id);
+                if (!existingDeck) {
+                    console.log('Importing', deck.name);
+                    await this.deckService.createPrecon(deck);
+                }
+            }
+
+            console.log('Done importing Ascendancy decks');
             console.log('----------');
         } catch (err) {
             console.error('Could not finish import', err);
@@ -172,26 +173,14 @@ class ImportPrecons {
         return JSON.parse(data);
     }
 
-    loadBBDecks() {
-        let file = 'building-basics.json';
-        let data = fs.readFileSync(dataDirectory + file);
-        return JSON.parse(data);
-    }
-
-    loadCorpseRebuildDecks() {
-        let file = 'precon-corpse-rebuild.json';
-        let data = fs.readFileSync(dataDirectory + file);
-        return JSON.parse(data);
-    }
-
     loadChimeraDecks() {
         let file = 'chimera.json';
         let data = fs.readFileSync(dataDirectory + file);
         return JSON.parse(data);
     }
 
-    loadMSUDecks() {
-        let file = 'master-set-upgrade.json';
+    loadDragonbornDecks() {
+        let file = 'dragonborn.json';
         let data = fs.readFileSync(dataDirectory + file);
         return JSON.parse(data);
     }
@@ -208,6 +197,11 @@ class ImportPrecons {
         return JSON.parse(data);
     }
 
+    loadAscendancyDecks() {
+        let file = 'precon-ascendancy.json';
+        let data = fs.readFileSync(dataDirectory + file);
+        return JSON.parse(data);
+    }
 
     clearPrecons() {
         this.deckService.clearPrecons();

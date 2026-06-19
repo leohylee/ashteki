@@ -24,6 +24,15 @@ module.exports.init = function (server) {
     );
 
     server.get(
+        '/api/stats/survival',
+        passport.authenticate('jwt', { session: false }),
+        wrapAsync(async function (req, res) {
+            let stats = await gameService.getSurvivalStatsByUserName(req.user.username);
+            res.send({ success: true, stats: stats });
+        })
+    );
+
+    server.get(
         '/api/stats/elo',
         passport.authenticate('jwt', { session: false }),
         wrapAsync(async function (req, res) {
@@ -37,6 +46,277 @@ module.exports.init = function (server) {
             );
             list.sort((a, b) => (a.eloRating > b.eloRating ? -1 : 1));
             res.send({ success: true, list: list });
+        })
+    );
+
+    server.get(
+        '/api/cardstats',
+        passport.authenticate('jwt', { session: false }),
+        wrapAsync(async function (req, res) {
+            if (!req.user.permissions?.isAdmin) {
+                return res.status(403).send({ message: 'Unauthorized' });
+            }
+
+            let cardName = req.query.card;
+            if (!cardName) {
+                return res.status(400).send({ message: 'Card name required' });
+            }
+
+            let includeSolo = req.query.includeSolo === 'true';
+            let ranked = req.query.ranked === 'true';
+
+            let findSpec = {
+                winner: { $exists: true },
+                winReason: { $ne: 'Agreement' },
+                'players.name': { $exists: true },
+                chat: { $exists: true, $ne: '' }
+            };
+            if (!includeSolo) {
+                findSpec.solo = { $ne: true };
+            }
+            if (ranked) {
+                findSpec.gameType = 'competitive';
+            }
+
+            let games = await gameService.games.find(findSpec);
+
+            let totalGames = 0;
+            let winnerPlays = 0;
+            let loserPlays = 0;
+            let totalPlays = 0;
+            let otherPlays = 0;
+            let otherChatMessages = [];
+
+            for (let game of games) {
+                let players = game.players.map(p => p.name);
+                let winner = game.winner;
+                let loser = players.find(p => p !== winner);
+
+                let chat = game.chat || '';
+                let escapedCard = cardName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                let regex = new RegExp(`(${players.join('|')}) plays ${escapedCard}`, 'gi');
+                let matches = chat.match(regex);
+
+                if (matches && matches.length > 0) {
+                    totalGames++;
+                    for (let match of matches) {
+                        let playedBy = match.match(/^([^ ]+) plays/)[1];
+                        if (playedBy.toLowerCase() === winner.toLowerCase()) {
+                            winnerPlays++;
+                            totalPlays++;
+                        } else if (playedBy.toLowerCase() === loser.toLowerCase()) {
+                            loserPlays++;
+                            totalPlays++;
+                        } else {
+                            otherPlays++;
+                            totalPlays++;
+                            otherChatMessages.push(match);
+                        }
+                    }
+                }
+            }
+
+            res.send({ success: true, card: cardName, totalGames, winnerPlays, loserPlays, totalPlays, otherPlays, otherChatMessages });
+        })
+    );
+
+    server.get(
+        '/api/cardstats/csv',
+        wrapAsync(async function (req, res) {
+
+            let start = req.query.start ? new Date(req.query.start) : null;
+            let end = req.query.end ? new Date(req.query.end) : null;
+            let includeSolo = req.query.includeSolo === 'true';
+            let ranked = req.query.ranked === 'true';
+
+            if ((start && isNaN(start.getTime())) || (end && isNaN(end.getTime()))) {
+                return res.status(400).send({ message: 'Invalid date format' });
+            }
+
+            let findSpec = {
+                winner: { $exists: true },
+                winReason: { $ne: 'Agreement' },
+                'players.name': { $exists: true },
+                chat: { $exists: true, $ne: '' }
+            };
+            if (!includeSolo) {
+                findSpec.solo = { $ne: true };
+            }
+            if (ranked) {
+                findSpec.gameType = 'competitive';
+            }
+            if (start) {
+                findSpec.finishedAt = findSpec.finishedAt || {};
+                findSpec.finishedAt.$gte = start;
+            }
+            if (end) {
+                findSpec.finishedAt = findSpec.finishedAt || {};
+                findSpec.finishedAt.$lt = end;
+            }
+
+            let games = await gameService.games.find(findSpec);
+            const totalGameCount = games.length;
+            let cardStats = {};
+
+            games.forEach((game) => {
+                if (!game.winner || game.winReason === 'Agreement' || !game.chat || game.chat === '') {
+                    return;
+                }
+
+                let players = game.players.map(p => p.name);
+                let isSolo = game.solo || players.length !== 2;
+                if (!includeSolo && isSolo) {
+                    return;
+                }
+
+                let winner = game.winner;
+                let loser = isSolo ? null : players.find(p => p !== winner);
+
+                let chat = game.chat;
+                let cardsSeen = {};
+                let playRegex = /(?:^|: )([^\s]+) plays ([^\n\r]+)/gm;
+                let match;
+                while ((match = playRegex.exec(chat)) !== null) {
+                    let playerName = match[1];
+                    let cardName = match[2].trim();
+                    cardName = cardName.replace(/\s+(?:attaching it to|to|and)[\s\S]*$/i, '').trim();
+
+                    if (!cardsSeen[cardName]) {
+                        cardsSeen[cardName] = {
+                            winnerPlayed: false,
+                            loserPlayed: false,
+                            otherPlays: 0,
+                            otherMessages: [],
+                            players: new Set()
+                        };
+                    }
+
+                    cardsSeen[cardName].players.add(playerName);
+                    if (playerName.toLowerCase() === winner.toLowerCase()) {
+                        cardsSeen[cardName].winnerPlayed = true;
+                    } else if (loser && playerName.toLowerCase() === loser.toLowerCase()) {
+                        cardsSeen[cardName].loserPlayed = true;
+                    } else {
+                        cardsSeen[cardName].otherPlays++;
+                        cardsSeen[cardName].otherMessages.push(match[0]);
+                    }
+                }
+
+                Object.keys(cardsSeen).forEach((cardName) => {
+                    if (!cardStats[cardName]) {
+                        cardStats[cardName] = { totalGames: 0, winnerPlays: 0, loserPlays: 0, totalPlays: 0, otherPlays: 0, otherMessages: [], players: new Set() };
+                    }
+
+                    cardStats[cardName].totalGames++;
+                    if (cardsSeen[cardName].winnerPlayed) {
+                        cardStats[cardName].winnerPlays++;
+                        cardStats[cardName].totalPlays++;
+                    }
+                    if (cardsSeen[cardName].loserPlayed) {
+                        cardStats[cardName].loserPlays++;
+                        cardStats[cardName].totalPlays++;
+                    }
+                    cardStats[cardName].otherPlays += cardsSeen[cardName].otherPlays;
+                    cardStats[cardName].totalPlays += cardsSeen[cardName].otherPlays;
+                    cardStats[cardName].otherMessages.push(...cardsSeen[cardName].otherMessages);
+                    cardsSeen[cardName].players.forEach((playerName) => cardStats[cardName].players.add(playerName));
+                });
+            });
+
+            let csv = `Game Count: ${totalGameCount}\nCard Name,Total Games,Winner Plays,Loser Plays,Total Plays,Other Plays,Other Chat Messages,Win %,Unique Players\n`;
+            Object.keys(cardStats).forEach((cardName) => {
+                const stats = cardStats[cardName];
+                const winPercent = stats.totalGames > 0 ? Math.round((stats.winnerPlays / stats.totalGames) * 100) : 0;
+                const uniquePlayerCount = stats.players.size;
+                csv += `"${cardName.replace(/"/g, '""')}",${stats.totalGames},${stats.winnerPlays},${stats.loserPlays},${stats.totalPlays},${stats.otherPlays},"${JSON.stringify(stats.otherMessages).replace(/"/g, '""')}",${winPercent},${uniquePlayerCount}\n`;
+            });
+
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename="card_play_stats.csv"');
+            res.send(csv);
+        })
+    );
+
+    server.get(
+        '/api/pbstats/csv',
+        wrapAsync(async function (req, res) {
+            let start = req.query.start ? new Date(req.query.start) : null;
+            let end = req.query.end ? new Date(req.query.end) : null;
+            let includeSolo = req.query.includeSolo === 'true';
+            let ranked = req.query.ranked === 'true';
+
+            if ((start && isNaN(start.getTime())) || (end && isNaN(end.getTime()))) {
+                return res.status(400).send({ message: 'Invalid date format' });
+            }
+
+            let findSpec = {
+                winner: { $ne: null },
+                winReason: { $ne: 'Agreement' },
+                'players.name': { $exists: true }
+            };
+            if (!includeSolo) {
+                findSpec.solo = { $ne: true };
+            }
+            if (ranked) {
+                findSpec.gameType = 'competitive';
+            }
+            if (start) {
+                findSpec.finishedAt = findSpec.finishedAt || {};
+                findSpec.finishedAt.$gte = start;
+            }
+            if (end) {
+                findSpec.finishedAt = findSpec.finishedAt || {};
+                findSpec.finishedAt.$lt = end;
+            }
+
+            gameService.games
+                .find(findSpec)
+                .then((games) => {
+                    const totalGameCount = games.length;
+                    console.info('Total games returned from query:', totalGameCount);
+
+                    const pbUseStats = {};
+
+                    games.forEach((game) => {
+                        let players = game.players.map(p => p.name);
+                        if (![players[0], players[1]].includes(game.winner)) {
+                            console.log('Error record - no winner match:', game.winner, 'Players:', players, game.winReason);
+                            return;
+                        }
+                        let isSolo = game.solo || players.length !== 2;
+                        if (!includeSolo && isSolo) {
+                            return; // Skip solo games if not including
+                        }
+
+                        game.players.forEach((player) => {
+                            if (!pbUseStats[player.deck]) {
+                                pbUseStats[player.deck] = { name: player.deck, wins: 0, losses: 0 };
+                            }
+
+                            var stat = pbUseStats[player.deck];
+
+                            if (player.name === game.winner) {
+                                stat.wins++;
+                            } else {
+                                stat.losses++;
+                            }
+                        });
+                    });
+
+                    // Generate CSV
+                    let csv = `Game Count: ${totalGameCount}\nPhoenixborn,Total Games,Wins,Losses\n`;
+                    Object.entries(pbUseStats).forEach(([deckName, stats]) => {
+                        csv += `"${deckName.replace(',', '')}",${stats.wins + stats.losses},${stats.wins},${stats.losses}\n`;
+                    });
+
+                    res.setHeader('Content-Type', 'text/csv');
+                    res.setHeader('Content-Disposition', 'attachment; filename="pbUseStats.csv"');
+                    res.send(csv);
+
+                })
+                .catch((error) => {
+                    console.error('Error generating stats:', error);
+                });
         })
     );
 };

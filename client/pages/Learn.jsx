@@ -8,7 +8,7 @@ const LearnToPlay = () => {
     return (
         <Col className='full-height lobby-content' xs='12'>
             <Panel type='lobby' cardClass='learn'>
-                <h2>Learn to play Ashes Reborn</h2>
+                <h2>Learn to play Ashes</h2>
                 <Row className='lobby-row'>
                     <Col md='4'>
                         <h3>Plaid Hat Games</h3>
@@ -51,35 +51,6 @@ const LearnToPlay = () => {
                         <ul >
                             <li>Play a game using the <a href='https://jaysonsethlindley.medium.com/first-adventure-dueling-decks-from-the-ashes-reborn-master-set-1d82917881fb'>First Adventure</a> decks.
                                 <p>Perfectly crafted from the core set, these dualling decks use Aradel and Saria and are a great introduction to the game.</p>
-                            </li>
-                            <li>
-                                Try out the <b>Building Basics</b> decks - These great starter decks use
-                                just the core set, and are built into ashteki. There are 3 pairs:
-                                <ul>
-                                    <li>
-                                        <a href='https://www.plaidhatgames.com/news/2020/11/04/building-basics-rise-phoenixborn/'>
-                                            Jessa vs Coal
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href='https://www.plaidhatgames.com/news/2020/12/02/building-basics-master-set-noah/'>
-                                            Noah
-                                        </a>{' '}
-                                        vs{' '}
-                                        <a href='https://www.plaidhatgames.com/news/2020/12/09/building-basics-master-set-maeoni/'>
-                                            Maeoni
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href='https://www.plaidhatgames.com/news/2020/11/18/building-basics-master-set-saria/'>
-                                            Saria
-                                        </a>{' '}
-                                        vs{' '}
-                                        <a href='https://www.plaidhatgames.com/news/2020/11/11/building-basics-master-set-aradel/'>
-                                            Aradel
-                                        </a>
-                                    </li>
-                                </ul>
                             </li>
                             <li>
                                 You can practise against an AI opponent on{' '}

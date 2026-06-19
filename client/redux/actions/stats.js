@@ -13,6 +13,16 @@ export function loadUserStats(months, gameType) {
         }
     };
 }
+export function loadSurvivalStats() {
+    return {
+        types: ['REQUEST_SURVIVALSTATS', 'RECEIVE_SURVIVALSTATS'],
+        shouldCallAPI: () => true,
+        APIParams: {
+            url: '/api/stats/survival',
+            cache: false
+        }
+    };
+}
 
 export function loadEloLadder() {
     return {
@@ -20,6 +30,18 @@ export function loadEloLadder() {
         shouldCallAPI: () => true,
         APIParams: {
             url: '/api/stats/elo',
+            cache: false
+        }
+    };
+}
+
+export function loadCardStats(cardName, includeSolo) {
+    return {
+        types: ['REQUEST_CARDSTATS', 'RECEIVE_CARDSTATS'],
+        shouldCallAPI: () => true,
+        APIParams: {
+            url: '/api/cardstats',
+            data: { card: cardName, includeSolo: includeSolo },
             cache: false
         }
     };

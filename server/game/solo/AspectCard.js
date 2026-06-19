@@ -10,8 +10,7 @@ class AspectCard extends Card {
             target: {
                 autoTarget: () => this.owner.phoenixborn,
                 gameAction: ability.actions.dealDamage((context) => ({
-                    amount: context.source.blood,
-                    showMessage: true
+                    amount: context.source.blood
                 }))
             },
             preferActionPromptMessage: true
@@ -32,27 +31,6 @@ class AspectCard extends Card {
 
             effect: AbilityDsl.effects.defender()
         });
-    }
-
-    statusAbility(properties) {
-        return this.forcedReaction(
-            Object.assign(
-                {
-                    status: true,
-                    inexhaustible: true,
-                    when: {
-                        // it's my turn
-                        onBeginTurn: (event, context) => event.player === context.player
-                    },
-                    location: 'play area',
-                    cost: [AbilityDsl.costs.loseStatus(1)],
-                    logUse: (context) =>
-                        properties.log === 'each' ||
-                        (properties.log === 'last' && context.source.status === 0)
-                },
-                properties
-            )
-        );
     }
 
     hordeAttack() {

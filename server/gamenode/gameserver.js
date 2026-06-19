@@ -392,6 +392,8 @@ class GameServer {
      * @param {string} username
      */
     onFailedConnect(gameId, username) {
+        logger.info(`failed connect: ${gameId} , ${username}`);
+
         const game = this.findGameForUser(username);
         if (!game || game.id !== gameId) {
             return;
@@ -416,6 +418,8 @@ class GameServer {
         if (!game) {
             return;
         }
+
+        logger.info(`closing game: ${game.id}`);
 
         for (let player of Object.values(game.getPlayersAndSpectators())) {
             if (player.socket) {
@@ -516,8 +520,11 @@ class GameServer {
     }
 
     onLeaveGame(socket) {
+        logger.info(`leave game request: ${socket.user.username}`);
+
         let game = this.findGameForUser(socket.user.username);
         if (!game) {
+            logger.error(`leave game - not found!: ${socket.user.username}`);
             return;
         }
 
@@ -538,11 +545,17 @@ class GameServer {
 
         // Auto-leave dummy opponent
         if (game.solo && !isSpectator) {
-            game.leave(DummyUser.DUMMY_USERNAME);
+            logger.info(`leave game - DummyUser Leave: ${game.id}`);
+            if (game.newGameType === 'bot') {
+                game.leave(DummyUser.BOT_USERNAME);
+            } else {
+                game.leave(DummyUser.CHIMERA_USERNAME);
+            }
         }
 
         if (game.isEmpty()) {
             delete this.games[game.id];
+            logger.info(`user left game. isEmpty game closure: ${game.id}`);
 
             this.gameSocket.send('GAMECLOSED', { game: game.id });
         }
@@ -554,6 +567,7 @@ class GameServer {
         let game = this.findGameForUser(socket.user.username);
 
         if (!game) {
+            logger.error(`${command}: game not found for user ${socket.user.username}`);
             return;
         }
 

@@ -15,6 +15,12 @@ export const LeftMenu = [
     { path: '/', title: 'Play' },
     { path: '/cards', title: 'Cards', showOnlyWhenLoggedIn: false },
     { path: '/decks', title: 'Decks', showOnlyWhenLoggedIn: true },
+    {
+        path: '/decks/chimera',
+        title: 'Chimera',
+        showOnlyWhenLoggedIn: true,
+        permission: 'isSupporter'
+    },
     { path: '/results', title: 'Results', showOnlyWhenLoggedIn: true },
     { path: '/faq', title: 'Help' },
     {
@@ -25,7 +31,8 @@ export const LeftMenu = [
             { path: '/useralts', title: 'User Alts', permission: 'canManageTournaments' },
             { path: '/nodes', title: 'Nodes', permission: 'canManageNodes' },
             { path: '/banlist', title: 'Ban List', permission: 'canManageBanlist' },
-            { path: '/taggedgames', title: 'Tagged Games', permission: 'canManageTournaments' }
+            { path: '/taggedgames', title: 'Tagged Games', permission: 'canManageTournaments' },
+            { path: '/cardstats', title: 'Card Stats', permission: 'isAdmin' }
         ]
     }
 ];

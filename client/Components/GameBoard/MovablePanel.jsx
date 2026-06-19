@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDrag } from 'react-dnd';
 import $ from 'jquery';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMinusCircle, faPlusCircle, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faMinusCircle, faPlusCircle, faSortAlphaAsc, faSortAlphaDown, faSortNumericDown, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 import { ItemTypes } from '../../constants';
 import PopupDefaults from './PopupDefaults';
@@ -10,7 +10,7 @@ import PopupDefaults from './PopupDefaults';
 import './MovablePanel.scss';
 import { Resizable } from 're-resizable';
 
-const MovablePanel = ({ children, name, onCloseClick, onPlusClick, onMinusClick, side, title }) => {
+const MovablePanel = ({ children, name, alphaSort, onAlphaClick, showAlphaSort, onCloseClick, onPlusClick, onMinusClick, side, title }) => {
     const key = `${name}-${side}`;
     const savedStyle = localStorage.getItem(key);
     const style = (savedStyle && JSON.parse(savedStyle)) || PopupDefaults[key];
@@ -52,7 +52,8 @@ const MovablePanel = ({ children, name, onCloseClick, onPlusClick, onMinusClick,
     };
 
     const [{ isDragging, dragOffset }, drag] = useDrag({
-        item: { name: key, type: ItemTypes.PANEL },
+        type: ItemTypes.PANEL,
+        item: { name: key },
         collect: (monitor) => {
             return {
                 isDragging: monitor.isDragging(),
@@ -61,6 +62,9 @@ const MovablePanel = ({ children, name, onCloseClick, onPlusClick, onMinusClick,
         },
         end: (_, monitor) => {
             const offset = monitor.getSourceClientOffset();
+            if (!offset) {
+                return;
+            }
             const style = getStyle(offset);
 
             localStorage.setItem(`${key}`, JSON.stringify(style));
@@ -68,7 +72,7 @@ const MovablePanel = ({ children, name, onCloseClick, onPlusClick, onMinusClick,
     });
 
     useEffect(() => {
-        if (isDragging) {
+        if (isDragging && dragOffset) {
             let style = getStyle(dragOffset);
 
             setPosition(style);
@@ -103,6 +107,15 @@ const MovablePanel = ({ children, name, onCloseClick, onPlusClick, onMinusClick,
                                 <FontAwesomeIcon icon={faPlusCircle} />
                             </a>
 
+                        </span>
+                    }
+                    {
+                        showAlphaSort &&
+                        <span className='alpha-buttons'>
+
+                            <a className='alpha-button' onClick={onAlphaClick}>
+                                <FontAwesomeIcon icon={alphaSort ? faSortNumericDown : faSortAlphaDown} />
+                            </a>
                         </span>
                     }
                     <span className='text-center'>{title}</span>

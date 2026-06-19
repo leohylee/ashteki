@@ -1,7 +1,7 @@
 @import '../../styles/variables';
 @import '../../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
 
 .movable-panel {
     z-index: $layer-card-menu;
@@ -17,6 +17,15 @@
     border-top-right-radius: 3px;
 }
 
+.panel-heading .text-center {
+    flex: 1;
+    text-align: center;
+}
+
+.panel-heading .float-right {
+    margin-left: auto;
+}
+
 .close-button {
     color: $body-color;
     margin-bottom: 0 !important;
@@ -27,7 +36,7 @@
     border-color: $primary;
 
     .panel-heading {
-        background-image: url('~assets/img/panel-primary.png');
+        background-image: url('assets/img/panel-primary.png');
         border-color: $primary;
     }
 }

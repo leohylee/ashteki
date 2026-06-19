@@ -4,7 +4,7 @@ describe('Iron Scales', function () {
     describe('When dealt damage', function () {
         beforeEach(function () {
             this.setupTest({
-                mode: 'solo',
+                mode: 'chimera',
                 player1: {
                     phoenixborn: 'coal-roarkwin',
                     inPlay: ['blood-puppet', 'anchornaut', 'hammer-knight', 'light-swordsman'],
@@ -60,7 +60,6 @@ describe('Iron Scales', function () {
             expect(this.ironScales.isAttacker).toBe(true);
             this.player1.clickDone();
             this.player1.clickYes(); // counter
-
 
             expect(this.ironScales.damage).toBe(0);
             expect(this.bloodPuppet.location).toBe('archives');

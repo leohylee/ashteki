@@ -1,8 +1,8 @@
 @import '../../styles/variables';
 @import '../../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
-@import '~bootstrap/scss/mixins';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/mixins';
 
 .game-board {
     position: absolute;
@@ -16,7 +16,7 @@
     overflow: clip;
 
     &.select-cursor {
-        cursor: url('~assets/img/crosshairs.cur'), default;
+        cursor: url('assets/img/crosshairs.cur'), default;
     }
 
     .card {
@@ -112,6 +112,8 @@
         width: 100%;
         color: #CCC;
         background-color: black;
+        z-index: 10;
+        text-align: center;
     }
 
     .game-menu-trigger {

@@ -1,9 +1,8 @@
 const socketio = require('socket.io');
 const Socket = require('./socket.js');
 const jwt = require('jsonwebtoken');
-const _ = require('underscore');
 const moment = require('moment');
-
+const _ = require('underscore');
 const logger = require('./log');
 const version = moment(require('../version').releaseDate);
 const PendingGame = require('./pendinggame');
@@ -18,7 +17,7 @@ const DummyUser = require('./models/DummyUser.js');
 const CampaignDeckValidator = require('./CampaignDeckValidator.js');
 
 class Lobby {
-    constructor(server, options = {}) {
+    constructor(httpServer, options = {}) {
         this.sockets = {};
         this.socketsByName = {};
         this.users = {};
@@ -39,7 +38,7 @@ class Lobby {
 
         this.userService.on('onBlocklistChanged', this.onBlocklistChanged.bind(this));
 
-        this.io = options.io || new socketio.Server(server, {});
+        this.io = options.io || new socketio.Server(httpServer, {});
 
         // this.io.set('heartbeat timeout', 30000);
         this.io.use(this.handshake.bind(this));
@@ -280,6 +279,9 @@ class Lobby {
         }
 
         for (let player of Object.values(game.getPlayersAndSpectators())) {
+            if (player.id === 0) { // dummy user
+                continue;
+            }
             if (!this.sockets[player.id]) {
                 logger.info(`Wanted to send to ${player.id} but have no socket`);
                 continue;
@@ -349,6 +351,7 @@ class Lobby {
         socket.registerEvent('selectdeck', this.onSelectDeck.bind(this));
         socket.registerEvent('setsololevel', this.onSetSoloLevel.bind(this));
         socket.registerEvent('setsolostage', this.onSetSoloStage.bind(this));
+        socket.registerEvent('setaddedThreat', this.onSetAddedThreat.bind(this));
         socket.registerEvent('startgame', this.onStartGame.bind(this));
         socket.registerEvent('togglenode', this.onToggleNode.bind(this));
         socket.registerEvent('watchgame', this.onWatchGame.bind(this));
@@ -474,9 +477,20 @@ class Lobby {
         }
 
         if (game.solo) {
-            const dummy = new DummyUser();
+            let dummyUsername = DummyUser.DRAGONBORN_USERNAME;
+            if (game.newGameType === 'bot') {
+                dummyUsername = DummyUser.BOT_USERNAME;
+            }
+            if (game.newGameType === 'chimera') {
+                dummyUsername = DummyUser.CHIMERA_USERNAME;
+            }
+
+            const dummy = new DummyUser(dummyUsername);
             game.addPlayer(0, dummy);
-            await this.selectDeck(game, dummy, true, -1, 0, game.gameFormat);
+            if (['chimera', 'dragonborn'].includes(game.newGameType)) {
+                // pre-load deck
+                await this.selectDeck(game, dummy, true, -1, 0, game.gameFormat);
+            }
         }
 
         this.sendGameState(game);
@@ -550,6 +564,10 @@ class Lobby {
         this.broadcastGameMessage('updategame', game);
 
         for (let player of Object.values(game.getPlayersAndSpectators())) {
+            if (player.id === 0) { // dummy user
+                continue;
+            }
+
             let socket = this.sockets[player.id];
 
             if (!socket || !socket.user) {
@@ -612,7 +630,11 @@ class Lobby {
         }
 
         if (game.solo && !game.isSpectator(username)) {
-            game.leave(DummyUser.DUMMY_USERNAME);
+            if (game.newGameType === 'bot') {
+                game.leave(DummyUser.BOT_USERNAME);
+            } else {
+                game.leave(DummyUser.CHIMERA_USERNAME);
+            }
         }
         game.leave(username);
         socket.send('cleargamestate');
@@ -671,7 +693,11 @@ class Lobby {
         } else if (game.gameFormat === 'coaloff') {
             deck = this.deckService.getCoalOffDeck(cards);
         } else if (game.solo && user.isDummy) {
-            deck = await this.deckService.getChimeraDeck();
+            if (game.newGameType === 'chimera') {
+                deck = await this.deckService.getChimeraDeck();
+            } else if (game.newGameType === 'dragonborn') {
+                deck = await this.deckService.getDragonbornDeck();
+            }
         } else {
             switch (deckId) {
                 case -1: // random choice 
@@ -714,7 +740,10 @@ class Lobby {
         }
 
         let hasConjurations = this.checkConjurations(deck);
-        let tenDice = 10 === deck.dicepool.reduce((acc, d) => acc + d.count, 0);
+        const numDice = deck.mode === 'chimera' ? 5 : 10;
+        const legalCardCount = deck.mode === 'chimera' ? 18 : 30;
+
+        let expectedDice = numDice === deck.dicepool.reduce((acc, d) => acc + d.count, 0);
 
         const countUniques = deck.cards
             .filter((c) => c.card.phoenixborn)
@@ -729,24 +758,35 @@ class Lobby {
         let uniques = !hasPhoenixborn || validUniques;
 
         const maxThree = !deck.cards.some((c) => c.count > 3);
+        let aspectCheck = true;
+        if (deck.mode === 'chimera') {
+            const oneCount = deck.cards.filter(c => c.card.blood === 1).reduce((acc, c) => acc + c.count, 0);
+            const twoCount = deck.cards.filter(c => c.card.blood === 2).reduce((acc, c) => acc + c.count, 0);
+            aspectCheck = oneCount === 9 && twoCount === 9;
+        }
 
         const legalToPlay =
-            hasPhoenixborn && maxThree && cardCount === 30 && hasConjurations && tenDice && uniques;
+            hasPhoenixborn &&
+            maxThree &&
+            cardCount === legalCardCount &&
+            hasConjurations &&
+            expectedDice &&
+            uniques &&
+            aspectCheck;
 
         deck.status = {
-            basicRules: hasPhoenixborn && cardCount === 30,
+            basicRules: hasPhoenixborn && cardCount === legalCardCount,
             maxThree: maxThree,
             legalToPlay: legalToPlay,
             hasConjurations: hasConjurations,
-            tenDice: tenDice,
+            tenDice: expectedDice,
             uniques: uniques,
-            noUnreleasedCards: true,
-            officialRole: true
+            aspectCheck: aspectCheck
         };
 
         if (game.gameFormat === 'hl2pvp') {
             const validator = new CampaignDeckValidator(this.cards, this.precons);
-            const hl2pvp = validator.validateDeck(deck, 2).valid;
+            const hl2pvp = validator.validateHL2PvP(deck).valid;
             deck.status.hl2pvp = hl2pvp;
         }
 
@@ -760,6 +800,13 @@ class Lobby {
         }
 
         game.soloLevel = level;
+        if (level === 'V') {
+            game.soloStage = 1;
+            game.gameFormat = 'survival';
+        }
+        else {
+            game.gameFormat = 'standard';
+        }
         this.sendGameState(game);
     }
 
@@ -770,6 +817,16 @@ class Lobby {
         }
 
         game.soloStage = stage;
+        this.sendGameState(game);
+    }
+
+    onSetAddedThreat(socket, gameId, threat) {
+        let game = this.games[gameId];
+        if (!game) {
+            return;
+        }
+
+        game.addedThreat = threat;
         this.sendGameState(game);
     }
 
@@ -1060,7 +1117,7 @@ class Lobby {
         });
     }
 
-    onNodeReconnected(nodeName, games) {
+    async onNodeReconnected(nodeName, games) {
         for (let game of Object.values(games)) {
             let owner = game.players[game.owner];
 
@@ -1069,7 +1126,8 @@ class Lobby {
                 continue;
             }
 
-            let syncGame = new PendingGame(new User(owner.user), {
+            const ownerUser = await this.userService.getUserByUsername(game.owner);
+            let syncGame = new PendingGame(new User(ownerUser), {
                 allowSpectators: game.allowSpectators,
                 name: game.name
             });
@@ -1087,19 +1145,24 @@ class Lobby {
             syncGame.solo = game.solo;
 
             for (let player of Object.values(game.players)) {
+                const playerUser = await this.userService.getUserByUsername(player.name);
+
                 syncGame.players[player.name] = {
                     id: player.id,
                     name: player.name,
                     owner: game.owner === player.name,
-                    user: new User(player.user)
+                    deck: player.deck,
+                    user: player.name === 'Chimera' ? new DummyUser() : new User(playerUser)
                 };
             }
 
             for (let player of Object.values(game.spectators)) {
+                const spectatorUser = await this.userService.getUserByUsername(player.name);
+
                 syncGame.spectators[player.name] = {
                     id: player.id,
                     name: player.name,
-                    user: new User(player.user)
+                    user: new User(spectatorUser)
                 };
             }
 

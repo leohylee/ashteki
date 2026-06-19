@@ -1,7 +1,7 @@
 @import '../../styles/variables';
 @import '../../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
 
 .deck-grid {
     width: 100%;
@@ -140,7 +140,7 @@
 
             &.jessa-na-ni {
                 background-image: url('https://cdn.ashes.live/images/cards/jessa-na-ni.jpg');
-                background-position: 50% 20%;
+                background-position: 50% 21%;
                 background-size: 200%;
             }
 
@@ -228,6 +228,12 @@
                 background-size: 250%;
             }
 
+            &.tash-cantasita {
+                background-image: url('https://cdn.ashteki.com/ashes/tash/tash-cantasita.jpg');
+                background-position: 50% 20%;
+                background-size: 250%;
+            }
+
             &.victoria-glassfire {
                 background-image: url('https://cdn.ashes.live/images/cards/victoria-glassfire.jpg');
                 background-position: 45% 20%;
@@ -240,12 +246,41 @@
                 background-size: 250%;
             }
 
+            &.issa-brightmore {
+                background-image: url('https://cdn.ashes.live/images/cards/issa-brightmore.jpg');
+                background-position: 40% 20%;
+                background-size: 230%;
+            }
+
+            &.arren-frostpeak {
+                background-image: url('https://cdn.ashes.live/images/cards/arren-frostpeak.jpg');
+                background-position: 45% 20%;
+                background-size: 300%;
+            }
+
+            &.kanna-galeheart {
+                background-image: url('https://cdn.ashteki.com/ashes/kanna/kanna-galeheart.jpg');
+                background-position: 45% 20%;
+                background-size: 300%;
+            }
+
+            &.maeve-luminvale {
+                background-image: url('https://cdn.ashteki.com/ashes/maeve/maeve-luminvale.jpg');
+                background-position: 50% 21% !important;
+                background-size: 300%;
+            }
+
             &.corpse-of-viros {
                 background-image: url('https://cdn.ashes.live/images/cards/corpse-of-viros-1p-standard-1.jpg');
                 background-position: 60% 32%;
                 background-size: 150%;
             }
 
+            &.scatha-kalani {
+                background-image: url('https://cdn.ashteki.com/ashes/scatha/scatha-kalani.jpg');
+                background-position: 50% 25%;
+                background-size: 200%;
+            }
 
             &.frostwild-scourge {
                 background-image: url('https://cdn.ashes.live/images/cards/frostwild-scourge-1p-standard-1.jpg');
@@ -268,6 +303,12 @@
             &.spawn-of-shadowreck {
                 background-image: url('https://cdn.ashes.live/images/cards/spawn-of-shadowreck-1p-standard-1.jpg');
                 background-position: 50% 42%;
+                background-size: 150%;
+            }
+
+            &.flood-of-moon-cove {
+                background-image: url('https://cdn.ashteki.com/ashes/mooncove/flood-of-moon-cove-1p-standard-1.jpg');
+                background-position: 50% 30%;
                 background-size: 150%;
             }
 

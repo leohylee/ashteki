@@ -4,7 +4,6 @@ import { faLink } from '@fortawesome/free-solid-svg-icons';
 import ZoomableCard from './ZoomableCard';
 
 const CardListImg = ({ deckCards, noIndex }) => {
-
     let cardsToRender = [];
     let groupedCards = {};
 
@@ -22,12 +21,14 @@ const CardListImg = ({ deckCards, noIndex }) => {
     });
 
     for (let key in groupedCards) {
-        let cardList = groupedCards[key];
+        let cardList = groupedCards[key].sort((a, b) => (a.id > b.id ? 1 : -1));
 
         cardList.forEach((card) => {
             const cardProps = Object.assign({ index: card.count }, card, card.card, card.cardData);
             cardsToRender.push(cardProps);
         });
+        // to sort across all card types use:
+        // cardsToRender.sort((a, b) => a.card.id > b.card.id ? 1 : -1);
     }
 
     return (

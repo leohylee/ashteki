@@ -278,6 +278,7 @@ class GameRouter extends EventEmitter {
 
                 break;
             case 'PLAYERLEFT':
+                logger.info(`Player left game: ${message.arg.gameId} , ${message.arg.player}`);
                 if (!message.arg.spectator) {
                     this.gameService.update(message.arg.game);
                 }
@@ -304,10 +305,12 @@ class GameRouter extends EventEmitter {
         }
 
         const ranked = game.gameType === GameType.Competitive;
-        // increment player game counts
-        game.players.forEach((player) => {
-            Promise.resolve(this.userService.incrementGameCount(player.name, ranked));
-        });
+        // increment player game counts if pvp
+        if (!game.solo) {
+            game.players.forEach((player) => {
+                Promise.resolve(this.userService.incrementGameCount(player.name, ranked));
+            });
+        }
 
         this.emit('onGameFinished', game.gameId);
     }

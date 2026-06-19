@@ -1,11 +1,13 @@
 @import '../../styles/variables';
 @import '../../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
-@import '~bootstrap/scss/mixins';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/mixins';
 
 .navbar {
     font-size: 1rem;
+    background-color: rgb(0, 0, 0, 0.7);
+    padding-left: 5px;
 }
 
 .navbar-sm {
@@ -20,4 +22,10 @@
 
 .patreon-link {
     color: #CCC;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+
+    background-color: $primary;
 }

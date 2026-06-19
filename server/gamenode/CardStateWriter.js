@@ -37,9 +37,13 @@ class CardStateWriter {
             state.life = this.card.life;
             state.guarded = this.card.usedGuardThisRound;
             state.damage = this.card.damage;
+            state.drowningLevel = this.card.drowningLevel;
         }
         if (this.card.type === CardType.ReadySpell) {
             state.cardSlot = this.card.cardSlot;
+        }
+        if (this.card.type === CardType.Aspect) {
+            state.target = this.card.target;
         }
 
         return state;

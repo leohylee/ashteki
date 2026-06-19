@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
-import { isSafari } from 'react-device-detect';
+import React from 'react';
 import CardImage from './CardImage';
-import classNames from 'classnames';
 import attackIcon from '../../assets/img/attack-icon.png';
 import medIcon from '../../assets/img/meditate-icon.png';
 import passIcon from '../../assets/img/pass-icon.png';
+import classNames from 'classnames';
 
 import './CardZoom.scss';
 import './Cardlog.scss';
 import DieIcon from './DieIcon';
+import { useSelector } from 'react-redux';
 
 const CardLogEx = ({ items, onMouseOut, onMouseOver }) => {
-    const [show, setShow] = useState(true);
-
+    const owner = useSelector(
+        (state) => state.lobby.currentGame.players[state.lobby.currentGame.owner]
+    );
     if (!items) {
         return null;
     }
@@ -69,19 +70,35 @@ const CardLogEx = ({ items, onMouseOut, onMouseOver }) => {
                         {item.p} <span className={actionClass}>uses</span> dice power
                     </div>
                 </div>
-
             )
+        }
+
+        if (['des', 'dis'].includes(item.type)) {
+            const card = item.obj;
+            return (
+                <>
+                    <div key={item.id} className='log-card dx'
+                        onMouseOut={() => onMouseOut && onMouseOut(item.obj)}
+                        onMouseOver={() => onMouseOver && onMouseOver(item.obj)}
+                    >
+                        <CardImage card={item.obj} noIndex={true} />
+                        <div className='log-info'>{card.name} is {item.type === 'des' ? 'destroyed' : 'discarded'}</div>
+                    </div>
+                </>
+            );
         }
 
         // now it's a card
         if (!item.obj.id) return '';
 
         const actionText = item.type === 'play' ? 'plays' : 'uses';
-
+        let className = classNames('log-card', {
+            'other-player': item.p && item.p !== owner.name,
+        });
         return (
             <div
                 key={item.id}
-                className='log-card'
+                className={className}
                 onMouseOut={() => onMouseOut && onMouseOut(item.obj)}
                 onMouseOver={() => onMouseOver && onMouseOver(item.obj)}
             >

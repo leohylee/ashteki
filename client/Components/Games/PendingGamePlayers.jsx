@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { sendSocketMessage } from '../../redux/actions';
-import { Button, Col, Form, Row } from 'react-bootstrap';
+import { Button, Form, Row } from 'react-bootstrap';
 import classNames from 'classnames';
 
 import './PendingGamePlayer.scss';
@@ -71,6 +71,10 @@ const PendingGamePlayers = ({ currentGame, user }) => {
         dispatch(sendSocketMessage('setsolostage', currentGame.id, newStage));
     };
 
+    const onAddedThreatChange = (newLevel) => {
+        dispatch(sendSocketMessage('setaddedThreat', currentGame.id, newLevel));
+    };
+
     const patreonLoginClick = (event) => {
         if (user?.patreon === 'linked') {
             window.location = 'https://www.patreon.com/ashteki';
@@ -82,7 +86,7 @@ const PendingGamePlayers = ({ currentGame, user }) => {
     };
 
     return (
-        <div>
+        <div className='pending-game-players'>
             <h3>Players:</h3>
             {Object.values(currentGame.players).map((player) => {
                 const isMe = player && player.name === user?.username;
@@ -96,6 +100,7 @@ const PendingGamePlayers = ({ currentGame, user }) => {
                     clickable: currentGame.gameFormat !== 'coaloff'
                 });
 
+                // deck selected
                 if (player && player.deck && player.deck.selected) {
                     if (!userIsSpectator && (isMe || currentGame.solo)) {
                         const deckName = player.deck.name;
@@ -106,14 +111,15 @@ const PendingGamePlayers = ({ currentGame, user }) => {
                         );
                     } else {
                         const deckName =
-                            player.name === 'Chimera'
+                            (player.deck.isChimera || player.deck.isDragonborn)
                                 ? player.deck.name
                                 : 'Deck Selected';
                         deck = <span className='deck-selection'>{deckName}</span>;
                     }
 
-                    status = !(currentGame.solo && !isMe) && (
+                    status = !(player.deck.isChimera || player.deck.isDragonborn) && (
                         <DeckStatus
+                            deck={player.deck}
                             status={player.deck.status}
                             gameFormat={currentGame.gameFormat}
                         />
@@ -122,7 +128,7 @@ const PendingGamePlayers = ({ currentGame, user }) => {
                     if (player.deck.isChimera) {
                         if (userIsSpectator) {
                             soloControls = <span></span>;
-                        } else if (allowPremium) {
+                        } else {
                             soloControls = (
                                 <>
                                     <Form.Select className='inline'
@@ -131,35 +137,47 @@ const PendingGamePlayers = ({ currentGame, user }) => {
                                     >
                                         <option value='S'>Standard</option>
                                         <option value='H'>Heroic</option>
+                                        <option value='V'>Survival</option>
                                     </Form.Select>
+
+                                    {currentGame.gameFormat === 'standard' && (
+                                        <Form.Select
+                                            className='inline'
+                                            onChange={(e) => onSoloStageChange(e.target.value)}
+                                        >
+                                            <option>1</option>
+                                            <option>2</option>
+                                            <option>3</option>
+                                        </Form.Select>
+                                    )}
+                                </>
+                            );
+                        }
+                    } else if (player.deck.isDragonborn) {
+                        if (userIsSpectator) {
+                            soloControls = <span></span>;
+                        } else {
+                            soloControls = (
+                                <>
+                                    <span>Threat: </span>&nbsp;
                                     <Form.Select className='inline'
-                                        onChange={(e) => onSoloStageChange(e.target.value)}
+                                        onChange={(e) => onAddedThreatChange(e.target.value)}
                                     >
-                                        <option>1</option>
-                                        <option>2</option>
-                                        <option>3</option>
+                                        <option value='0'>+0</option>
+                                        <option value='1'>+1</option>
+                                        <option value='2'>+2</option>
+                                        <option value='3'>+3</option>
+                                        <option value='4'>+4</option>
                                     </Form.Select>
                                 </>
                             );
-                        } else {
-                            soloControls = (<>
-                                <span
-                                    className='premium btn btn-primary def disabled'
-                                    title='Patreon only'
-                                >
-                                    Standard L1
-                                </span>
-                            </>
-                            );
                         }
                     }
-                } else if (player && isMe) {
+                } else if (player && (isMe || currentGame.newGameType === 'bot')) {
                     selectLink = (
-                        <>
-                            <Button onClick={() => clickHandler(isMe)} className='btn-focus def'>
-                                Select Deck
-                            </Button>
-                        </>
+                        <Button onClick={() => clickHandler(isMe)} className='btn-focus def'>
+                            Select Deck
+                        </Button>
                     );
                 }
 
@@ -196,6 +214,7 @@ const PendingGamePlayers = ({ currentGame, user }) => {
             })}
             {showModal && (
                 <SelectDeckModal
+                    newGameType={currentGame.newGameType}
                     gameFormat={currentGame.gameFormat}
                     onClose={() => setShowModal(false)}
                     onDeckSelected={deckSelectedHandler}

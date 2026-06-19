@@ -23,14 +23,10 @@ class FateReflection extends Card {
                     cardType: BattlefieldTypes,
                     controller: 'opponent',
                     gameAction: ability.actions.dealDamage((context) => ({
-                        amount: context.preThenEvent.gameAction.amount, // needed to specify which amount method's amount to use
-                        showMessage: true
+                        amount: context.preThenEvent.context.event.amountDealt
                     }))
                 }
-            },
-            message:
-                '{0} plays {1} to prevent all damage to {2} then deals that damage to an opposing unit',
-            messageArgs: (context) => [context.player, context.source, context.event.card]
+            }
         });
     }
 }

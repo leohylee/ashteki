@@ -31,14 +31,16 @@ class Card extends PlayableObject {
         this.cardData = cardData;
         this.isChained = cardData.isChained;
         this.imageStub = cardData.imageStub || cardData.stub;
-        if (owner.user.altArts && !owner.user.settings.optionSettings?.manualAlts) {
+        if (owner.user.altArts) {
             if (
                 owner.user.altArts[this.cardData.stub] &&
                 owner.user.altArts[this.cardData.stub].length
             ) {
                 this.altArts = [cardData.stub, ...owner.user.altArts[this.cardData.stub]];
-                // default to first alt
-                this.imageStub = this.altArts[1];
+                if (!owner.user.settings.optionSettings?.manualAlts) {
+                    // default to first alt
+                    this.imageStub = this.altArts[1];
+                }
             }
         }
 
@@ -211,6 +213,47 @@ class Card extends PlayableObject {
             );
         }
 
+        // Armor & Damage prevention
+        if ([...BattlefieldTypes, ...PhoenixbornTypes].includes(this.type)) {
+            this.abilities.keywordReactions.push(
+                this.forcedInterrupt({
+                    preferActionPromptMessage: true,
+                    autoResolve: true,
+                    inexhaustible: true,
+                    condition: (context) => context.event.preventable && context.source.anyEffect('preventAllDamage', context),
+                    when: {
+                        onDamageApplied: (event, context) => event.card === context.source
+                    },
+                    gameAction: AbilityDsl.actions.preventDamage((context) => ({
+                        event: context.event,
+                        amount: 'all'
+                    }))
+                })
+            );
+        }
+
+        if (BattlefieldTypes.includes(this.type)) {
+            this.abilities.keywordReactions.push(
+                this.forcedInterrupt({
+                    autoResolve: true,
+                    inexhaustible: true,
+                    condition: (context) => context.source.armor > 0,
+                    when: {
+                        onDamageApplied: (event, context) => event.card === context.source
+                    },
+                    effect: 'prevent {0} damage',
+                    effectArgs: (context) => context.source.armor,
+                    gameAction: AbilityDsl.actions.preventDamage((context) => ({
+                        event: context.event,
+                        amount:
+                            context.event.amountDealt <= context.source.armor
+                                ? context.event.amountDealt
+                                : context.source.armor
+                    }))
+                })
+            );
+        }
+
         if (BattlefieldTypes.includes(this.type)) {
             this.abilities.keywordReactions.push(
                 this.forcedReaction({
@@ -260,7 +303,7 @@ class Card extends PlayableObject {
             effect: 'deal ' + amount + ' damage to a phoenixborn',
             target: {
                 activePromptTitle: 'Ambush ' + amount + ': Choose a Phoenixborn',
-                gameAction: AbilityDsl.actions.dealDamage({ amount: amount, showMessage: true }),
+                gameAction: AbilityDsl.actions.dealDamage({ amount: amount }),
                 cardType: PhoenixbornTypes,
                 optional: true
             }
@@ -296,6 +339,40 @@ class Card extends PlayableObject {
             message: "Flicker: {0} is shuffled into {1}'s draw pile",
             messageArgs: (context) => [context.source, context.player]
         });
+    }
+
+    uplift() {
+        this.entersPlay({
+            target: {
+                toSelect: 'die',
+                autoTarget: (context) =>
+                    context.player.findDie((die) => die.magic === Magic.Astral && die.exhausted),
+                gameAction: AbilityDsl.actions.resolveDieAbility((context) => ({
+                    targetCard: context.source
+                }))
+            }
+        });
+    }
+
+    statusAbility(properties) {
+        return this.forcedReaction(
+            Object.assign(
+                {
+                    status: true,
+                    inexhaustible: true,
+                    when: {
+                        // it's my turn
+                        onBeginTurn: (event, context) => event.player === context.player
+                    },
+                    location: 'play area',
+                    cost: [AbilityDsl.costs.loseStatus(1)],
+                    logUse: (context) =>
+                        properties.log === 'each' ||
+                        (properties.log === 'last' && context.source.status === 0)
+                },
+                properties
+            )
+        );
     }
 
     fade() {
@@ -347,6 +424,22 @@ class Card extends PlayableObject {
                 properties
             )
         );
+    }
+
+    withdraw() {
+        return this.forcedInterrupt({
+            title: 'Withdraw',
+            inexhaustible: true,
+            condition: () => this.exhausted,
+            when: {
+                onDamageApplied: (event, context) => event.card === context.source
+            },
+            effect: 'prevent all damage',
+            gameAction: AbilityDsl.actions.preventDamage((context) => ({
+                event: context.event,
+                amount: 'all'
+            }))
+        });
     }
 
     inheritance() {
@@ -560,7 +653,7 @@ class Card extends PlayableObject {
     }
 
     applyAnyLocationPersistentEffects() {
-        _.each(this.persistentEffects, (effect) => {
+        this.persistentEffects.forEach((effect) => {
             if (effect.location === 'any') {
                 effect.ref = this.addEffectToEngine(effect);
             }
@@ -740,7 +833,9 @@ class Card extends PlayableObject {
 
         // const gainedAbilities = acquiredEffects
         //     .filter((e) => e.type === 'gainAbility');
-        return simpleNames.concat(keywords).concat(restrictions);
+        return simpleNames
+            .concat(keywords.filter((k) => k.name !== 'drowning'))
+            .concat(restrictions);
     }
 
     checkRestrictions(actionType, context = null) {
@@ -855,6 +950,7 @@ class Card extends PlayableObject {
         clone.modifiedBattlefield = this.getBattlefield();
         clone.modifiedSpellboard = this.getSpellboard();
         clone.modifiedRecover = this.getRecover();
+        clone.wasCharged = this.isCharged;
         return clone;
     }
 
@@ -1115,6 +1211,22 @@ class Card extends PlayableObject {
         return this.dieUpgrades.some((c) => c.magic === Magic.Charm);
     }
 
+    get isCharged() {
+        return this.dieUpgrades.some((c) => c.magic === Magic.Artifice);
+    }
+
+    get isAirborne() {
+        return this.dieUpgrades.some((c) => c.magic === Magic.Astral);
+    }
+
+    get hasAstralDie() {
+        return this.dieUpgrades.some((c) => c.magic === Magic.Astral);
+    }
+
+    get drowningLevel() {
+        return this.getKeywordValue('drowning');
+    }
+
     canPlayAsUpgrade() {
         return this.anyEffect('canPlayAsUpgrade') || UpgradeCardTypes.includes(this.type);
     }
@@ -1130,7 +1242,7 @@ class Card extends PlayableObject {
             return false;
         } else if (legalActions.length === 1) {
             let action = legalActions[0];
-            if (!this.game.activePlayer.optionSettings.confirmOneClick) {
+            if (!this.game.activePlayer.confirmOneClick) {
                 let context = action.createContext(player);
                 this.game.resolveAbility(context);
                 return true;
@@ -1336,11 +1448,11 @@ class Card extends PlayableObject {
         );
     }
 
-    getLegalActions(player) {
+    getLegalActions(player, ignoredRequirements = []) {
         let actions = this.getActions();
         actions = actions.filter((action) => {
             let context = action.createContext(player);
-            return !action.meetsRequirements(context);
+            return !action.meetsRequirements(context, ignoredRequirements);
         });
 
         return actions;

@@ -4,7 +4,8 @@ import DieSlot from '../GameBoard/DieSlot';
 import './DeckDice.scss';
 import classNames from 'classnames';
 
-const DeckDice = ({ deck, onDieClick, onDieHover, size }) => {
+const DeckDice = ({ deck, onDieClick, onDieHover, size, slotCount = 10 }) => {
+
     const getDiceToRender = () => {
         const diceToRender = [];
         if (deck.dicepool) {
@@ -24,7 +25,7 @@ const DeckDice = ({ deck, onDieClick, onDieHover, size }) => {
                     }
                 });
         }
-        for (let i = diceToRender.length; i < 10; i++) {
+        for (let i = diceToRender.length; i < slotCount; i++) {
             diceToRender.push(<DieSlot key={`${deck._id}-slot-${i}`} />);
         }
         return diceToRender;
@@ -32,7 +33,8 @@ const DeckDice = ({ deck, onDieClick, onDieHover, size }) => {
 
     var diceToRender = getDiceToRender();
     const ddClasses = classNames('deck-dice', {
-        large: size === 'large'
+        large: size === 'large',
+        med: size === 'med'
     });
     return <div className={ddClasses}>{diceToRender}</div>;
 };

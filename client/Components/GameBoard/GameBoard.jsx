@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import { Trans } from 'react-i18next';
 import {
     clearZoom,
-    navigate,
+
     sendGameMessage,
     sendTypingMessage,
     zoomCard
@@ -28,7 +28,9 @@ import ChimeraRow from './ChimeraRow';
 import DeckNotes from '../../pages/DeckNotes';
 import BattleZone from './BattleZone';
 import Sidebar from './Sidebar';
-import AlertSplash from './AlertSplash';
+import ActivePlayerPrompt from './ActivePlayerPrompt';
+import { useNavigate } from 'react-router-dom';
+import SplashPlayerPrompt from './SplashPlayerPrompt';
 
 const placeholderPlayer = {
     cardPiles: {
@@ -54,7 +56,9 @@ const placeholderPlayer = {
 
 const GameBoard = () => {
     const dispatch = useDispatch();
-    const [showMessages, setShowMessages] = useState(true);
+    const navigate = useNavigate();
+
+    const [showChatLog, setShowChatLog] = useState(true);
     const [showDiceHistory, setShowDiceHistory] = useState(false);
     const [showManualCommands, setShowManualCommands] = useState(false);
     const [showDeckNotes, setShowDeckNotes] = useState(false);
@@ -64,17 +68,26 @@ const GameBoard = () => {
     const currentGame = useSelector((state) => state.lobby.currentGame);
     const cardSize = useSelector((state) => state.account.user.settings.cardSize);
     const cardToZoom = useSelector((state) => state.cards.zoomCard);
+    const zoomSticky = useSelector((state) => state.cards.zoomSticky);
+
     const cards = useSelector((state) => state.cards.cards);
     const optionSettings = useSelector((state) => state.account.user.settings.optionSettings || {});
+    const noCardZoom = optionSettings.noCardZoom;
     const authUser = useSelector((state) => state.auth.user);
     const user = useSelector((state) => state.account.user);
 
     const onMouseOver = (card) => {
-        dispatch(zoomCard(card));
+        if (!noCardZoom) {
+            if (!(cardToZoom && zoomSticky)) {
+                dispatch(zoomCard(card));
+            }
+        }
     };
 
     const onMouseOut = () => {
-        dispatch(clearZoom());
+        if (!noCardZoom && !zoomSticky) {
+            dispatch(clearZoom());
+        }
     };
 
     const onCardClick = (card, source) => {
@@ -96,10 +109,6 @@ const GameBoard = () => {
 
     const onDieClick = (die) => {
         dispatch(sendGameMessage('dieClicked', die.uuid));
-    };
-
-    const handleDrawPopupChange = (event) => {
-        dispatch(sendGameMessage('showDrawDeck', event.visible));
     };
 
     const sendChatMessage = (message) => {
@@ -152,7 +161,7 @@ const GameBoard = () => {
     };
 
     const onMessagesClick = () => {
-        setShowMessages(!showMessages);
+        setShowChatLog(!showChatLog);
     };
 
     const onDiceHistoryClick = () => {
@@ -206,6 +215,7 @@ const GameBoard = () => {
                         />
                     </div>
                 )}
+
                 <div className='player-home-row'>
                     <PlayerPBRow
                         active={otherPlayer.activePlayer}
@@ -213,6 +223,7 @@ const GameBoard = () => {
                         discard={otherPlayer.cardPiles.discard}
                         drawDeck={otherPlayer.cardPiles.deck}
                         isMe={false}
+                        leftMode={leftMode}
                         manualMode={currentGame.manualMode}
                         numDeckCards={otherPlayer.numDeckCards}
                         onCardClick={onCardClick}
@@ -277,7 +288,7 @@ const GameBoard = () => {
     ) => {
         return [
             <div key='board-middle' className='board-middle'>
-                {currentGame.solo
+                {currentGame.isChimera
                     ? getChimeraRow(otherPlayer, compactLayout, leftMode, cardSize, spectating)
                     : getPlayerRows(otherPlayer, compactLayout, leftMode, cardSize, spectating)}
 
@@ -298,6 +309,7 @@ const GameBoard = () => {
                             cardsInPlay={otherPlayer.cardPiles.cardsInPlay}
                             phoenixborn={otherPlayer.phoenixborn}
                             onCardClick={onCardClick}
+                            onDieClick={onDieClick}
                             onMenuItemClick={onMenuItemClick}
                             onMouseOut={onMouseOut}
                             onMouseOver={onMouseOver}
@@ -319,6 +331,7 @@ const GameBoard = () => {
                                 phoenixborn={thisPlayer.phoenixborn}
                                 manualMode={currentGame.manualMode}
                                 onCardClick={onCardClick}
+                                onDieClick={onDieClick}
                                 onMenuItemClick={onMenuItemClick}
                                 onMouseOut={onMouseOut}
                                 onMouseOver={onMouseOver}
@@ -352,7 +365,6 @@ const GameBoard = () => {
                         side='bottom'
                         spells={thisPlayer.cardPiles.spells}
                         spectating={spectating}
-                        onDrawPopupChange={handleDrawPopupChange}
                         onPileClick={onPileClick}
                         onShuffleClick={onShuffleClick}
                         onDragDrop={onDragDrop}
@@ -395,7 +407,7 @@ const GameBoard = () => {
     }
 
     if (!authUser) {
-        dispatch(navigate('/'));
+        navigate('/');
         return (
             <div>
                 <Trans>You are not logged in, redirecting...</Trans>
@@ -432,9 +444,30 @@ const GameBoard = () => {
     const showAlertSplash = thisPlayer.promptState.showAlert;
 
     let manualMode = currentGame.manualMode;
-    const compactLayout = optionSettings?.compactLayout;
-    const leftMode = optionSettings?.leftMode || currentGame.solo || compactLayout;
+    const compactLayout = currentGame.isChimera || currentGame.isDragonborn || optionSettings?.compactLayout;
+    const leftMode = optionSettings?.leftMode;
 
+    const getOtherPlayerPrompt = (otherPlayer) => {
+        let otherPlayerPrompt = null;
+        if (currentGame.isBot) {
+            const otherState = otherPlayer.promptState;
+            otherState.style = 'warning';
+            otherPlayerPrompt = (
+                <div className='inset-pane'>
+                    <ActivePlayerPrompt
+                        cards={cards}
+                        promptState={otherState}
+                        onButtonClick={onCommand}
+                        onMouseOver={onMouseOver}
+                        onMouseOut={onMouseOut}
+                        onTimerExpired={onTimerExpired.bind(this)}
+                        phase={currentGame.currentPhase}
+                    />
+                </div>
+            );
+        }
+        return otherPlayerPrompt;
+    };
     return (
         <div className={boardClass}>
             {showModal && (
@@ -460,6 +493,7 @@ const GameBoard = () => {
                     onMouseOut={onMouseOut}
                     round={currentGame.round}
                     solo={currentGame.solo}
+                    survival={currentGame.isSurvival}
                     leftMode={leftMode}
                     showContextItem={!leftMode}
                     side='top'
@@ -494,13 +528,13 @@ const GameBoard = () => {
                     <WinLoseSplash game={currentGame} onCloseClick={onWinSplashCloseClick} />
                 )}
                 {showAlertSplash && (
-                    <AlertSplash
-                        thisPlayer={thisPlayer}
-                        onCommand={onCommand}
+                    <SplashPlayerPrompt
+                        promptState={thisPlayer.promptState}
+                        onButtonClick={onCommand}
                         onMouseOver={onMouseOver}
                         onMouseOut={onMouseOut}
                         onTimerExpired={onTimerExpired}
-                        onCloseClick={() => dispatch(sendGameMessage('closeAlert'))}
+                    // onCloseClick={() => dispatch(sendGameMessage('closeAlert'))}
                     />
                 )}
 
@@ -564,9 +598,9 @@ const GameBoard = () => {
                         />
                     )}
 
-                    {showMessages && (
+                    {showChatLog && (
                         <div className='gamechat'>
-                            {/* {getOtherPlayerPrompt(otherPlayer)} */}
+                            {getOtherPlayerPrompt(otherPlayer)}
                             <GameChat
                                 key='gamechat'
                                 messages={currentGame.messages}
@@ -590,6 +624,7 @@ const GameBoard = () => {
                     compactLayout={spectating && compactLayout}
                     firstPlayer={thisPlayer.firstPlayer}
                     isMe={!spectating}
+                    leftMode={leftMode}
                     manualModeEnabled={manualMode}
                     muteSpectators={currentGame.muteSpectators}
                     onDeckNotesClick={onDeckNotesClick}
@@ -610,7 +645,6 @@ const GameBoard = () => {
                     player={thisPlayer}
                     showControls={!spectating && manualMode}
                     showManualMode={!spectating}
-                    showMessages
                     showContextItem={!leftMode}
                     size={cardSize}
                     stats={thisPlayer.stats}
@@ -622,6 +656,6 @@ const GameBoard = () => {
     );
 };
 
-PlayerStats.displayName = 'GameBoard';
+GameBoard.displayName = 'GameBoard';
 
 export default GameBoard;

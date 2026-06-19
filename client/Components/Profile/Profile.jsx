@@ -11,8 +11,8 @@ import ProfileBackground from './ProfileBackground';
 import InGameSettings from './InGameSettings';
 import ProfileCardSize from './ProfileCardSize';
 import BlankBg from '../../assets/img/bgs/blank.png';
-import AshesRebornBg from '../../assets/img/bgs/ashesreborn.png';
-const { toBase64 } = require('../../util.js');
+const AshesRebornBg = new URL('../../assets/img/bgs/lobby_screen_ascendancy.jpg', import.meta.url).href;
+import { toBase64 } from '../../util.js';
 
 
 import './Profile.scss';
@@ -77,6 +77,7 @@ const initialValues = {
         alwaysGroupTactics: false,
         dontIceTrapOwnUnits: true,
         noAttackAlerts: false,
+        noCardZoom: false,
         leftMode: true,
         compactLayout: true,
         manualAlts: false
@@ -107,7 +108,7 @@ const Profile = ({ onSubmit, isLoading }) => {
 
     backgrounds.push({
         name: 'ashesreborn',
-        label: 'Ashes Reborn',
+        label: 'Ashes Ascendancy',
         imageUrl: AshesRebornBg
     });
 

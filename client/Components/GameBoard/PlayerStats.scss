@@ -1,8 +1,8 @@
 @import '../../styles/variables';
 @import '../../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
-@import '~bootstrap/scss/mixins';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/mixins';
 
 .player-stats {
     display: flex;
@@ -35,8 +35,8 @@
 
 .state {
     height: 27px;
-    padding-left: 5px;
-    padding-right: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
     border-right: solid 2px;
     display: flex;
     align-items: center;
@@ -52,6 +52,12 @@
             margin-right: 10px;
         }
     }
+
+    // svg {
+    //     height: 21px;
+    //     width: 21px !important;
+    //     vertical-align: middle;
+    // }
 
     &.first-player {
         margin: 0px 5px;
@@ -142,6 +148,20 @@
     min-width: 30px;
 }
 
+.stamina {
+    background-color: rgb(71, 117, 134);
+    color: white !important;
+    // font-weight: bold;
+    min-width: 30px;
+}
+
+.survival {
+    background-color: rgba(201, 0, 0, 0.9);
+    color: white !important;
+    // font-weight: bold;
+    min-width: 30px;
+}
+
 .life-red {
     color: red;
 }
@@ -154,6 +174,10 @@
     color: green;
 }
 
+.drowning-indicator {
+    color: rgb(0, 183, 255);
+    margin-left: 3px;
+}
 
 .chat-status {
     position: absolute;

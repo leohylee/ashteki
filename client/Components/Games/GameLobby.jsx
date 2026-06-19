@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
 import { useTranslation } from 'react-i18next';
 import { Col, Row } from 'react-bootstrap';
 
@@ -13,21 +12,19 @@ import discordTextLogo from '../../assets/img/discord-logo-white.svg';
 
 import './GameLobby.scss';
 import { useEffect } from 'react';
-import {
-    startNewGame,
-    joinPasswordGame,
-    sendSocketMessage,
-    setUrl,
-    navigate
-} from '../../redux/actions';
+import { startNewGame, joinPasswordGame, sendSocketMessage } from '../../redux/actions';
 import { useRef } from 'react';
 import PictureButton from '../Lobby/PictureButton';
 import LeaguePairings from './LeaguePairings';
 import LoadReplay from './LoadReplay';
+import { useNavigate } from 'react-router-dom';
+import { gameTypes } from '../../util';
+import { toast } from 'react-toastify';
 
 const GameLobby = ({ gameId }) => {
     const { t } = useTranslation();
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const filters = [
         { name: 'casual', label: t('Casual') },
         { name: 'competitive', label: t('Ranked') }
@@ -46,6 +43,8 @@ const GameLobby = ({ gameId }) => {
         passwordGame: state.lobby.passwordGame
     }));
     const user = useSelector((state) => state.account.user);
+    const showBot = user?.permissions?.playtester;
+    const showDragonborn = user?.permissions?.canVerifyDecks;
     const [currentFilter, setCurrentFilter] = useState(filterDefaults);
     const [showPairings, setShowPairings] = useState(false);
     const [replayLoad, setReplayLoad] = useState(false);
@@ -69,7 +68,7 @@ const GameLobby = ({ gameId }) => {
             const game = games.find((x) => x.id === gameId);
 
             if (!game) {
-                toastr.error('Error', 'The game you tried to join was not found.');
+                toast.error('The game you tried to join was not found.');
             } else {
                 if (!game.started && Object.keys(game.players).length < 2) {
                     if (game.needsPassword) {
@@ -85,7 +84,7 @@ const GameLobby = ({ gameId }) => {
                     }
                 }
             }
-            dispatch(setUrl('/'));
+            navigate('/', { replace: true });
         }
     }, [currentGame, dispatch, gameId, games]);
 
@@ -114,116 +113,133 @@ const GameLobby = ({ gameId }) => {
     };
 
     const newGameText = currentGame?.started === false ? currentGame.name : 'Start a new game';
+    const homeDisplay = !newGame && !replayLoad && !showPairings && currentGame?.started !== false;
     return (
-        <Row>
-            <Col md='6'>
-                <div className='lobby-card'>
-                    {!user && (
-                        <div className='text-center'>
-                            <AlertPanel type='warning'>
-                                {t('Please log in to be able to start a new game')}
-                            </AlertPanel>
-                        </div>
-                    )}
-                    {!showPairings && <div className='lobby-header'>{newGameText}</div>}
-                    {!newGame && !replayLoad && !showPairings && currentGame?.started !== false && (
-                        <>
-                            <div className='game-buttons'>
-                                <PictureButton
-                                    text='2 Player'
-                                    imageClass='pvp'
-                                    onClick={() => handleNewGameClick('pvp')}
-                                />
-                                <PictureButton
-                                    text='Chimera'
-                                    imageClass='chimera'
-                                    onClick={() => handleNewGameClick('chimera')}
-                                />
-                                <PictureButton
-                                    text='League'
-                                    header='Discord'
-                                    headerClass='discord'
-                                    imageClass='league'
-                                    onClick={() => handleNewGameClick('league')}
-                                />
+        <div className="container">
+            <Row>
+                <Col md='6'>
+                    <div className={!homeDisplay && 'lobby-card'}>
+                        {!user && (
+                            <div className='text-center'>
+                                <AlertPanel type='warning'>
+                                    {t('Please log in to be able to start a new game')}
+                                </AlertPanel>
                             </div>
-                            <div className='game-buttons nav-buttons'>
-                                <PictureButton
-                                    text='Decks'
-                                    imageClass='decks-link'
-                                    onClick={() => dispatch(navigate('/decks'))}
-                                />
-                                <PictureButton
-                                    text='Results'
-                                    imageClass='records-link'
-                                    onClick={() => dispatch(navigate('/results'))}
-                                />
-                                <PictureButton
-                                    text='Replay'
-                                    imageClass='replay'
-                                    onClick={() => handleReplayClick('replay')}
-                                />
-                            </div>
-                        </>
+                        )}
+                        {!homeDisplay && !showPairings && <div className='lobby-header'>{newGameText}</div>}
+                        {homeDisplay && (
+                            <>
+                                <div className='game-buttons'>
+                                    <PictureButton
+                                        text='2 Player'
+                                        imageClass='pvp'
+                                        onClick={() => handleNewGameClick(gameTypes.pvp)}
+                                    />
+                                    {showDragonborn && (
+                                        <PictureButton
+                                            text='Dragonborn'
+                                            header='Alpha Test'
+                                            imageClass='dragonborn'
+                                            onClick={() => handleNewGameClick(gameTypes.dragonborn)}
+                                        />
+                                    )}
+                                    <PictureButton
+                                        text='Chimera'
+                                        imageClass='chimera'
+                                        onClick={() => handleNewGameClick(gameTypes.chimera)}
+                                    />
+                                    <PictureButton
+                                        text='League'
+                                        header='Discord'
+                                        headerClass='discord'
+                                        imageClass='league'
+                                        onClick={() => handleNewGameClick(gameTypes.league)}
+                                    />
+                                    {showBot && (
+                                        <PictureButton
+                                            text='Bound Soul'
+                                            header='Alpha Test'
+                                            // header='Premium'
+                                            imageClass='bot'
+                                            onClick={() => handleNewGameClick(gameTypes.bot)}
+                                        />
+                                    )}
+                                    <PictureButton
+                                        text='Decks'
+                                        imageClass='decks-link'
+                                        onClick={() => navigate('/decks')}
+                                    />
+                                    <PictureButton
+                                        text='Results'
+                                        imageClass='records-link'
+                                        onClick={() => navigate('/results')}
+                                    />
+                                    <PictureButton
+                                        text='Replay'
+                                        imageClass='replay'
+                                        onClick={() => handleReplayClick('replay')}
+                                    />
+                                </div>
+                            </>
+                        )}
 
-                    )}
-
-                    {replayLoad && <LoadReplay onCancel={() => setReplayLoad(false)} />}
-                    {newGame && <NewGame />}
-                    {currentGame?.started === false && <PendingGame />}
-                    {showPairings && (
-                        <LeaguePairings onCancelClick={hidePairings} onPlayClick={hidePairings} />
-                    )}
-                </div>
-                <div ref={topRef}>{passwordGame && <PasswordGame />}</div>
-            </Col>
-            <Col md='6'>
-                <div className='lobby-card'>
-
-                    <div className='lobby-header'>Game List</div>
-
-                    <div className='game-list'>
-                        {games.length === 0 ? (
-                            <div className='no-games-notice'>
-                                No games are currently in progress
-                            </div>
-                        ) : (
-                            <GameList
-                                games={games}
-                                gameFilter={currentFilter}
-                                onJoinOrWatchClick={() => topRef.current.scrollIntoView(false)}
-                            />
+                        {replayLoad && <LoadReplay onCancel={() => setReplayLoad(false)} />}
+                        {newGame && <NewGame />}
+                        {currentGame?.started === false && <PendingGame />}
+                        {showPairings && (
+                            <LeaguePairings onCancelClick={hidePairings} onPlayClick={hidePairings} />
                         )}
                     </div>
-                </div>
+                    <div ref={topRef}>{passwordGame && <PasswordGame />}</div>
+                </Col>
+                <Col md='6'>
+                    <div className='lobby-card'>
 
-                <div className='lobby-card'>
-                    <a
-                        className='link-box-item lobby-content'
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        href='https://discord.gg/UU5bduq'
-                    >
-                        <div>
-                            <h2 className='lobby-header'>
-                                <img src={discordTextLogo} className='textlogo' />
-                                Join the Ashes Discord!
-                            </h2>
-                            <div className='d-none d-sm-block'>
-                                <ul className='two-column'>
-                                    <li>Find other players</li>
-                                    <li>Talk strategy</li>
-                                    <li>Get deckbuilding advice</li>
-                                    <li>Join a league or tournament</li>
-                                    <li>Ask rules questions</li>
-                                    <li>Report a bug</li>
-                                </ul>
-                            </div>
+                        <div className='lobby-header'>Game List</div>
+
+                        <div className='game-list'>
+                            {games.length === 0 ? (
+                                <div className='no-games-notice'>
+                                    No games are currently in progress
+                                </div>
+                            ) : (
+                                <GameList
+                                    games={games}
+                                    gameFilter={currentFilter}
+                                    onJoinOrWatchClick={() => topRef.current.scrollIntoView(false)}
+                                />
+                            )}
                         </div>
-                    </a>
-                </div>
-            </Col>
-        </Row>
+                    </div>
+
+                    <div className='lobby-card'>
+                        <a
+                            className='link-box-item lobby-content'
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            href='https://discord.gg/UU5bduq'
+                        >
+                            <div>
+                                <h2 className='lobby-header'>
+                                    <img src={discordTextLogo} className='textlogo' />
+                                    Join the Ashes Discord!
+                                </h2>
+                                <div className='d-none d-sm-block'>
+                                    <ul className='two-column'>
+                                        <li>Find other players</li>
+                                        <li>Talk strategy</li>
+                                        <li>Get deckbuilding advice</li>
+                                        <li>Join a league or tournament</li>
+                                        <li>Ask rules questions</li>
+                                        <li>Report a bug</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </Col>
+            </Row>
+        </div >
     );
 };
 

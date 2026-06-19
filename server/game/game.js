@@ -41,6 +41,11 @@ const logger = require('../log');
 const DummyPlayer = require('./solo/DummyPlayer');
 const PlayableObject = require('./PlayableObject');
 const EndGamePrompt = require('./gamesteps/EndGamePrompt');
+const BotPlayer = require('./solo/BotPlayer');
+const ChimeraPlayer = require('./solo/ChimeraPlayer');
+const DragonbornPlayer = require('./solo/DragonbornPlayer');
+const DragonPhase = require('./gamesteps/main/DragonPhase');
+
 
 class Game extends EventEmitter {
     constructor(details, options = {}) {
@@ -49,19 +54,33 @@ class Game extends EventEmitter {
         this.effectEngine = new EffectEngine(this);
         this.gameChat = new GameChat(this);
         this.pipeline = new GamePipeline();
-        this.cardVisibility = new CardVisibility(details.showHand, details.openHands, details.solo);
         this.router = options.router;
         this.saveReplay = details.saveReplay;
         this.solo = details.solo;
-        if (this.solo) {
+        this.isChimera = details.newGameType === 'chimera';
+        this.isDragonborn = details.newGameType === 'dragonborn';
+        this.isBot = details.newGameType === 'bot';
+        if ((this.solo && this.isChimera) || this.isDragonborn) {
             this.soloLevel = details.soloLevel;
             this.soloStage = details.soloStage;
+            this.addedThreat = details.addedThreat;
+            this.isSurvival = details.gameFormat === 'survival';
+            if (this.isSurvival) {
+                this.soloLevel = 'S';
+                this.soloStage = 1;
+            }
         }
         // disable fatigue for tests
         this.disableFatigue = options.disableFatigue;
 
         this.showHand = details.showHand;
         this.openHands = details.openHands;
+        this.cardVisibility = new CardVisibility(
+            details.showHand,
+            details.openHands,
+            this.isChimera || this.isDragonborn
+        );
+
         this.allowSpectators = details.allowSpectators;
 
         this.currentAbilityWindow = null;
@@ -133,8 +152,14 @@ class Game extends EventEmitter {
 
     createPlayer(player, clockDetails) {
         const isOwner = this.owner === player.user.username;
-        if (player.playerType === 'dummy') {
-            return new DummyPlayer(player.id, player.user, isOwner, this, clockDetails);
+        if (player.isChimera) {
+            return new ChimeraPlayer(player.id, player.user, isOwner, this, clockDetails);
+        }
+        if (player.isDragonborn) {
+            return new DragonbornPlayer(player.id, player.user, isOwner, this, clockDetails);
+        }
+        if (player.isBot) {
+            return new BotPlayer(player.id, player.user, isOwner, this, clockDetails);
         }
 
         return new Player(player.id, player.user, isOwner, this, clockDetails);
@@ -217,8 +242,13 @@ class Game extends EventEmitter {
     /**
      * Record that a unit has been destroyed this turn (e.g. for summon bone crow)
      */
-    onUnitDestroyed() {
+    onUnitDestroyed(card) {
         this.turnEvents.unitDestroyed = true;
+        this.logDestruction(card);
+    }
+
+    onCardDiscarded(card) {
+        this.logDiscard(card);
     }
 
     /*
@@ -622,7 +652,14 @@ class Game extends EventEmitter {
      */
     checkWinCondition() {
         for (const player of this.getPlayers()) {
-            if (player.phoenixborn.damage >= player.phoenixborn.life) {
+            if (player.isDummy && this.isSurvival) {
+                return;
+            }
+
+            if (
+                player.phoenixborn.damage + player.phoenixborn.drowningLevel >=
+                player.phoenixborn.life
+            ) {
                 this.recordWinner(player.opponent, 'damage');
             }
         }
@@ -809,6 +846,7 @@ class Game extends EventEmitter {
      * @param {String} playerName
      */
     concede(playerName) {
+        logger.info(`Player concede: ${playerName} in game ${this.id}`);
         let player = this.getPlayerByName(playerName);
 
         if (!player) {
@@ -1108,7 +1146,7 @@ class Game extends EventEmitter {
             this.getPlayers(),
             (cards, player) => {
                 let result = cards.concat(player.deck, player.archives, player.phoenixborn);
-                if (this.solo && player instanceof DummyPlayer) {
+                if (this.solo && player instanceof ChimeraPlayer) {
                     result = result.concat(player.ultimate);
                 }
                 return result;
@@ -1188,13 +1226,13 @@ class Game extends EventEmitter {
     }
 
     reRollPlayerDice() {
-        for (let player of this.getPlayers().filter((p) => !p.isDummy)) {
+        for (let player of this.getPlayers().filter((p) => !p.isChimera && !p.isDragonborn)) {
             player.rerollAllDice(this.round);
         }
     }
 
     unpinPlayerDice() {
-        for (let player of this.getPlayers().filter((p) => !p.isDummy)) {
+        for (let player of this.getPlayers().filter((p) => !p.isChimera && !p.isDragonborn)) {
             player.unpinAllDice();
         }
     }
@@ -1234,6 +1272,9 @@ class Game extends EventEmitter {
 
         this.raiseEvent('onBeginRound');
         this.getPlayers().forEach((player) => player.beginRound());
+        if (this.isDragonborn && this.round > 1) {
+            this.queueStep(new DragonPhase(this));
+        }
         this.queueStep(new PreparePhase(this));
 
         this.queueStep(new PlayerTurnsPhase(this));
@@ -1447,6 +1488,7 @@ class Game extends EventEmitter {
     }
 
     leave(playerName) {
+        logger.info(`Player leave: ${playerName} in game ${this.id}`);
         let player = this.playersAndSpectators[playerName];
 
         if (!player) {
@@ -1744,6 +1786,22 @@ class Game extends EventEmitter {
         this.addAlert('info', '{0} PASSES their main action', player);
     }
 
+    logDestruction(card) {
+        this.gameLog.push({
+            id: 'cl' + this.getCardLogIndex(),
+            act: 'des',
+            obj: card
+        });
+    }
+
+    logDiscard(card) {
+        this.gameLog.push({
+            id: 'cl' + this.getCardLogIndex(),
+            act: 'dis',
+            obj: card
+        });
+    }
+
     initiateAttack(target, attacker) {
         if (PhoenixbornTypes.includes(target.type)) {
             this.initiatePBAttack(target, attacker);
@@ -1777,6 +1835,7 @@ class Game extends EventEmitter {
             const p = {
                 deck: player.phoenixborn.name,
                 deckid: player.deckData._id,
+                deckName: player.deckData.name,
                 name: player.name,
                 turn: player.turn,
                 wins: player.wins,
@@ -1784,9 +1843,11 @@ class Game extends EventEmitter {
                 medCount: player.medCount,
                 totalDiceSpend: player.totalDiceSpend
             };
-            if (player.isDummy) {
+            if (player.isChimera || player.isDragonborn) {
                 p.level = this.soloLevel;
                 p.stage = this.soloStage;
+                p.preconId = player.deckData.precon_id;
+                p.addedThreat = this.addedThreat;
             }
             if (player.disconnectedAt) {
                 p.disconnectedAt = player.disconnectedAt;
@@ -1839,7 +1900,11 @@ class Game extends EventEmitter {
                 name: player.name,
                 owner: player.owner,
                 user: options.fullData && player.user,
-                wins: player.wins
+                wins: player.wins,
+                deck: {
+                    name: player.deckData.name,
+                    phoenixborn: player.deckData.phoenixborn
+                }
             };
         }
 
@@ -1850,6 +1915,9 @@ class Game extends EventEmitter {
             gamePrivate: this.gamePrivate,
             gameType: this.gameType,
             id: this.id,
+            isChimera: this.isChimera,
+            isDragonborn: this.isDragonborn,
+            isBot: this.isBot,
             label: this.label,
             manualMode: this.manualMode,
             messages: this.gameChat.messages,

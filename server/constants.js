@@ -14,6 +14,7 @@ const CardType = {
     Aspect: 'Aspect',
     ConjuredAspect: 'Conjured Aspect',
     Chimera: 'Chimera',
+    Dragonborn: 'Dragonborn',
     Behaviour: 'Behaviour'
 };
 
@@ -33,7 +34,7 @@ const BattlefieldTypes = [
     CardType.ConjuredAspect
 ];
 const AspectTypes = [CardType.Aspect, CardType.ConjuredAspect];
-const PhoenixbornTypes = [CardType.Phoenixborn, CardType.Chimera];
+const PhoenixbornTypes = [CardType.Phoenixborn, CardType.Chimera, CardType.Dragonborn];
 const UpgradeCardTypes = [CardType.Upgrade, CardType.ConjuredAlteration];
 const ConjuredCardTypes = [
     CardType.Conjuration,
@@ -57,6 +58,8 @@ const AbilityType = {
 const BluffAbilityTypes = [AbilityType.Interrupt, AbilityType.Reaction];
 
 const Magic = {
+    Artifice: 'artifice',
+    Astral: 'astral',
     Ceremonial: 'ceremonial',
     Charm: 'charm',
     Divine: 'divine',
@@ -64,7 +67,8 @@ const Magic = {
     Natural: 'natural',
     Sympathy: 'sympathy',
     Time: 'time',
-    Rage: 'rage'
+    Rage: 'rage',
+    Dragon: 'dragon'
 };
 
 const Level = {
@@ -91,6 +95,26 @@ const LegalLocations = {
     'Conjured Aspect': ['play area', 'archives', 'purged']
 };
 
+// this is mirrored in client codebase
+const GameTypes = Object.freeze({
+    pvp: 'pvp',
+    chimera: 'chimera',
+    dragonborn: 'dragonborn',
+    league: 'league',
+    bot: 'bot'
+});
+
+const Aim = {
+    Left: 'left',
+    Right: 'right',
+    Phoenixborn: 'jaw'
+};
+
+const ActionType = {
+    Attack: 'attack',
+    DicePower: 'dicePower'
+};
+
 module.exports = {
     Constants,
     CardType,
@@ -109,5 +133,8 @@ module.exports = {
     DamageDealingLocations,
     FaceUpLocations,
     LegalLocations,
-    GameType
+    GameTypes,
+    GameType,
+    Aim,
+    ActionType
 };

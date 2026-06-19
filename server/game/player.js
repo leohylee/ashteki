@@ -12,7 +12,8 @@ const {
     Level,
     PhoenixbornTypes,
     Magic,
-    LegalLocations
+    LegalLocations,
+    DamageDealingLocations
 } = require('../constants');
 const moment = require('moment');
 
@@ -70,6 +71,7 @@ class Player extends GameObject {
         this.suddenDeath = false;
         this.loseOnTurnEnd = false;
         this.behaviourRoll = undefined;
+        this.actionSpellPlayed = false;
     }
 
     get name() {
@@ -87,6 +89,10 @@ class Player extends GameObject {
     get isAwol() {
         let difference = moment().diff(moment(this.disconnectedAt), 'minutes');
         return difference > 3;
+    }
+
+    get confirmOneClick() {
+        return this.optionSettings.confirmOneClick;
     }
 
     isSpectator() {
@@ -222,6 +228,10 @@ class Player extends GameObject {
         );
     }
 
+    hasCardInArchives(stub) {
+        return this.archives.some((c) => c.id === stub);
+    }
+
     // CAUTION! sort of overridden in DummyPlayer
     get unitsInPlay() {
         return this.cardsInPlay.filter(
@@ -232,6 +242,16 @@ class Player extends GameObject {
     get charmedUnits() {
         return this.unitsInPlay.filter((card) =>
             card.dieUpgrades.some((d) => d.magic === Magic.Charm)
+        );
+    }
+
+    get chargedCards() {
+        return this.game.allCards.filter(
+            (c) =>
+                c.controller === this &&
+                DamageDealingLocations.includes(c.location) &&
+                c.dieUpgrades.length > 0 &&
+                c.dieUpgrades.some((d) => d.magic === Magic.Artifice)
         );
     }
 
@@ -273,6 +293,11 @@ class Player extends GameObject {
         return BattlefieldTypes.includes(card.type) && this.indexOf(card) === 0;
     }
 
+    getHighestUnitLife() {
+        const maxLife = Math.max(...this.unitsInPlay.map((u) => u.life));
+        return maxLife || 0;
+    }
+
     areCardsAdjacent(card, anotherCard) {
         if (anotherCard.facedown) {
             // threatzone isn't actually in the battlefield
@@ -302,16 +327,21 @@ class Player extends GameObject {
         return this.battlefield.some((c) => c.exhausted);
     }
 
-    getSpendableDice(context) {
-        // this assumes all spendable hosted dice are on ready spells
-        const spendableUpgrades = this.spellboard
-            .filter((card) => card.dieUpgrades.length && card.canSpendDieUpgrades(context))
+    getUsableDice(context) {
+        // this assumes all usable hosted dice are on ready spells
+        const usableUpgrades = [...this.spellboard, ...this.unitsInPlay, this.phoenixborn]
+            .filter((card) => card.dieUpgrades.length)
             .reduce((agg, card) => agg.concat(card.dieUpgrades), []);
         let usableDice = this.dice;
-        if (!this.checkRestrictions('useBasicDice', context)) {
-            usableDice = usableDice.filter(d => d.level !== Level.Basic);
-        }
-        return usableDice.concat(spendableUpgrades);
+        return usableDice.concat(usableUpgrades);
+    }
+
+    findDie(predicate) {
+        return this.dice.find(predicate);
+    }
+
+    hasDie(predicate) {
+        return !!this.findDie(predicate);
     }
 
     /**
@@ -494,6 +524,7 @@ class Player extends GameObject {
         this.passedMain = false;
         this.turn += 1;
         this.actions = { main: true, side: 1 };
+        this.actionSpellPlayed = false;
         //this.limitedPlayed = 0; // reset for my turn - moved to game.js
         this.game.addAlert('startofturn', `Turn ${this.turn} - {0}`, this);
         if (this.suddenDeath) {
@@ -517,8 +548,6 @@ class Player extends GameObject {
     endRound() {
         for (let card of this.cardsInPlay) {
             card.new = false;
-            // remove die attachments
-            this.removeDieAttachments(card);
         }
     }
 
@@ -654,8 +683,12 @@ class Player extends GameObject {
             }
 
             for (let upgrade of card.upgrades) {
+                let upgradeDestination = upgrade.discardLocation;
+                if (options?.upgradeDestination) {
+                    upgradeDestination = options.upgradeDestination;
+                }
                 upgrade.onLeavesPlay();
-                upgrade.owner.moveCard(upgrade, upgrade.discardLocation);
+                upgrade.owner.moveCard(upgrade, upgradeDestination);
             }
 
             // discard all cards under this one
@@ -873,7 +906,7 @@ class Player extends GameObject {
     }
 
     canAttack() {
-        return this.unitsInPlay.some((c) => c.canAttack());
+        return this.actions.main && this.unitsInPlay.some((c) => c.canAttack());
     }
 
     canSummon(stub) {

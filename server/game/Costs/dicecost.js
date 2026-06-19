@@ -9,7 +9,10 @@ class DiceCost {
     }
 
     canPay(context) {
-        return Dice.canMatch(context.player.getSpendableDice(context), this.getDiceReq(context));
+        const usableDice = context.player
+            .getUsableDice(context)
+            .filter((d) => this.costDieCondition(d, context));
+        return Dice.canMatch(usableDice, this.getDiceReq(context));
     }
 
     // eslint-disable-next-line no-unused-vars
@@ -20,20 +23,23 @@ class DiceCost {
     costDieCondition(die, context) {
         return (
             !die.exhausted &&
-            (die.level !== Level.Basic || context.player.checkRestrictions('useBasicDice'))
+            (die.level !== Level.Basic || context.player.checkRestrictions('useBasicDice')) &&
+            (!die.parent || die.parent.canSpendDieUpgrades(context))
         );
     }
 
     resolve(context, result) {
-        //TODO: change here to match parallels and non-basics
-        // const nonParallels = this.getDiceReq(context).filter((r) => !Array.isArray(r));
-        // const nonBasics = nonParallels.filter((r) => r.level !== 'basic');
         const nonBasics = this.getDiceReq(context).filter(
             (r) => Array.isArray(r) || r.level !== 'basic'
         );
 
-        const dice = context.player.dice; // only match / auto select from dice in active dice pool (not on cards)
-        let chosenDice = Dice.matchDice(dice, nonBasics);
+        let chosenDice = [];
+        if (context.player.isBot) {
+            chosenDice = Dice.matchDice(context.player.dice, this.getDiceReq(context));
+        } else {
+            chosenDice = Dice.matchDice(context.player.dice, nonBasics);
+        }
+
         if (
             !context.source.preventAutoDice &&
             !context.player.anyEffect('preventAutoDice') &&

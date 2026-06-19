@@ -1,34 +1,91 @@
 .fave-icon {
-    margin-right: 8px;
+    // margin-right: 4px;
     color: white;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background-color: rgb(0, 0, 0, 0.3);
+    width: 28px;
+    height: 28px;
+    border: 1px solid #666;
+    border-radius: 4px;
+    text-align: center;
+    padding-top: 2px;
+}
+
+.deck-title {
+    font-size: 20px;
+    text-shadow: #999 1px 1px 10px;
+    // margin-top: 10px;
+    // margin-bottom: 10px;
+
 }
 
 .deck-header {
     position: relative;
     display: flex;
     margin-bottom: 5px;
+    gap: 8px;
+}
 
+.deck-header,
+.deck-list-ex {
     .decklist-entry-image {
-        margin-right: 8px;
         height: 120px;
         width: 80px;
         min-width: 80px;
-        background-position-y: 25%;
+        background-position-y: 25% !important;
+
+        &.siege-of-lordswall {
+            background-position-y: 36% !important;
+            background-size: 170%;
+        }
+
+        &.frostwild-scourge {
+            background-position-y: 35% !important;
+            background-size: 180%;
+        }
+
+        &.blight-of-neverset {
+            background-position: 50% 35% !important;
+            background-size: 180%;
+        }
+
+        &.spawn-of-shadowreck {
+            background-position-y: 42% !important;
+            background-size: 180%;
+        }
+
+        &.flood-of-moon-cove {
+            background-position: 60% 35% !important;
+            background-size: 180%;
+        }
+
+        &.corpse-of-viros {
+            background-position: 60% 35% !important;
+            background-size: 180%;
+        }
     }
 
-    .deck-title {
-        font-size: 20px;
-        text-shadow: #FFF 1px 1px 15px;
-        // margin-top: 10px;
-        // margin-bottom: 10px;
-
+    .deck-pb-name {
+        font-size: 16px;
     }
 
-    .deck-header-buttons {
-        position: absolute;
-        right: 10px;
-        bottom: 5px;
-    }
+}
+
+.deck-header-buttons {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-left: auto;
+}
+
+.deck-edit-dd {
+    display: inline-block;
+}
+
+.deck-status {
+    height: 35px;
 }
 
 .deck-buttons {

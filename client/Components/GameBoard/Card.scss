@@ -1,7 +1,7 @@
 @import '../../styles/variables';
 @import '../../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
 
 .card-wrapper {
     margin: 0;
@@ -377,6 +377,12 @@
     left: 2px;
 }
 
+.threat {
+    background-color: rgba(201, 0, 0, 0.9);
+    position: absolute;
+    left: 2px;
+}
+
 .darkbg {
     // background: rgba(0,0,0,0.6);
     text-shadow: 1px 1px 2px #000;
@@ -385,7 +391,7 @@
 
 .flags {
     position: absolute;
-    bottom: -2px;
+    bottom: -4px;
     height: 24px;
     display: flex;
     justify-content: center;
@@ -452,4 +458,8 @@
 
 .effect-acquired img {
     width: 100%;
+}
+
+.long-press {
+    cursor: zoom-in;
 }

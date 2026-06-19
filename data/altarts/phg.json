@@ -7,9 +7,49 @@
             "alt": "alt/aradel-summergaard"
         },
         {
+            "name": "Aradel 1.0 Dark",
+            "stub": "aradel-summergaard",
+            "alt": "https://cdn.ashteki.com/ashes/alts/aradel-summergaard-dark.jpg"
+        },
+        {
             "name": "Coal Angry",
             "stub": "coal-roarkwin",
             "alt": "alt/coal-roarkwin"
+        },
+        {
+            "name": "Blood Puppets by NSM - Aradel",
+            "stub": "blood-puppet",
+            "alt": "https://cdn.ashteki.com/ashes/alts/blood-puppet-aradel.jpg"
+        },
+        {
+            "name": "Blood Puppets by NSM - Coal",
+            "stub": "blood-puppet",
+            "alt": "https://cdn.ashteki.com/ashes/alts/blood-puppet-coal.jpg"
+        },
+        {
+            "name": "Blood Puppets by NSM - Maeoni",
+            "stub": "blood-puppet",
+            "alt": "https://cdn.ashteki.com/ashes/alts/blood-puppet-maeoni.jpg"
+        },
+        {
+            "name": "Blood Puppets by NSM - Noah",
+            "stub": "blood-puppet",
+            "alt": "https://cdn.ashteki.com/ashes/alts/blood-puppet-noah.jpg"
+        },
+        {
+            "name": "Blood Puppets by NSM - Saria",
+            "stub": "blood-puppet",
+            "alt": "https://cdn.ashteki.com/ashes/alts/blood-puppet-saria.jpg"
+        },
+        {
+            "name": "Coal 1.0 Dark",
+            "stub": "coal-roarkwin",
+            "alt": "https://cdn.ashteki.com/ashes/alts/coal-roarkwin-dark.jpg"
+        },
+        {
+            "name": "Dimona 1.0 Dark",
+            "stub": "dimona-odinstar",
+            "alt": "https://cdn.ashteki.com/ashes/alts/dimona-odinstar-dark.jpg"
         },
         {
             "name": "Jessa Needles",
@@ -17,9 +57,24 @@
             "alt": "alt/jessa-na-ni"
         },
         {
+            "name": "Jessa 1.0 Dark",
+            "stub": "jessa-na-ni",
+            "alt": "https://cdn.ashteki.com/ashes/alts/jessa-na-ni-dark.jpg"
+        },
+        {
+            "name": "Leo Promo",
+            "stub": "leo-sunshadow",
+            "alt": "https://cdn.ashteki.com/ashes/alts/leo-promo.jpg"
+        },
+        {
             "name": "Maeoni Big Snake",
             "stub": "maeoni-viper",
             "alt": "alt/maeoni-viper"
+        },
+        {
+            "name": "Maeoni 1.0 Dark",
+            "stub": "maeoni-viper",
+            "alt": "https://cdn.ashteki.com/ashes/alts/maeoni-viper-dark.jpg"
         },
         {
             "name": "Noah Masked",
@@ -27,9 +82,19 @@
             "alt": "alt/noah-redmoon"
         },
         {
+            "name": "Noah 1.0 Dark",
+            "stub": "noah-redmoon",
+            "alt": "https://cdn.ashteki.com/ashes/alts/noah-redmoon-dark.jpg"
+        },
+        {
             "name": "Saria Makeup",
             "stub": "saria-guideman",
             "alt": "alt/saria-guideman"
+        },
+        {
+            "name": "Saria 1.0 Dark",
+            "stub": "saria-guideman",
+            "alt": "https://cdn.ashteki.com/ashes/alts/saria-guideman-dark.jpg"
         },
         {
             "name": "Gilder Fighting",
@@ -37,14 +102,34 @@
             "alt": "alt/gilder"
         },
         {
+            "name": "Hope - Martin Abel",
+            "stub": "hope-everthorn",
+            "alt": "https://cdn.ashteki.com/ashes/alts/hope-martin-abel.jpg"
+        },
+        {
             "name": "Mist Spirit Dark Forest",
             "stub": "mist-spirit",
             "alt": "alt/mist-spirit"
         },
         {
-            "name": "Rose Fire Dancer Ring",
+            "name": "Odette - Martin Abel",
+            "stub": "odette-diamondcrest",
+            "alt": "https://cdn.ashteki.com/ashes/alts/odette-martin-abel.jpg"
+        },
+        {
+            "name": "Rose Fire Dancer - Ring",
             "stub": "rose-fire-dancer",
             "alt": "alt/rose-fire-dancer"
+        },
+        {
+            "name": "Rose Fire Dancer - Firesticks",
+            "stub": "rose-fire-dancer",
+            "alt": "https://cdn.ashteki.com/ashes/alts/rose-fire-dancer-firesticks.jpg"
+        },
+        {
+            "name": "Rowan - kinopticon",
+            "stub": "rowan-umberend",
+            "alt": "https://cdn.ashteki.com/ashes/alts/rowan-kinopticon.jpg"
         },
         {
             "name": "Molten Gold Foil",
@@ -83,6 +168,11 @@
             "name": "Fire Archer - Odette style",
             "stub": "fire-archer",
             "alt": "alt/fire-archer"
+        },
+        {
+            "name": "Fire Archer - Pink arrow",
+            "stub": "fire-archer",
+            "alt": "https://cdn.ashteki.com/ashes/alts/fire-archer-alt-2.jpg"
         },
         {
             "name": "Frost Fang - Skull hat",

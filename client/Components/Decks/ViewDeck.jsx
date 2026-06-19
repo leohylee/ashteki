@@ -1,17 +1,12 @@
-import React from 'react';
-import { ButtonGroup, Dropdown } from 'react-bootstrap';
-import ConfirmButton from '../Form/ConfirmButton';
+import React, { useState } from 'react';
 import DeckSummary from './DeckSummary';
-import { deleteDeck, navigate, clearApiStatus, resyncDeck, duplicateDeck } from '../../redux/actions';
+import { deleteDeck, clearApiStatus, duplicateDeck } from '../../redux/actions';
 import { useDispatch, useSelector } from 'react-redux';
 import ApiStatus from '../Site/ApiStatus';
 import { Decks } from '../../redux/types';
 import './ViewDeck.scss';
 import DeckHeader from './DeckHeader';
-import { ashesLiveShareUrl } from '../../util';
-import { toastr } from 'react-redux-toastr';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCopy, faPen, faTrashCan } from '@fortawesome/free-solid-svg-icons';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * @typedef ViewDeckProps
@@ -23,19 +18,23 @@ import { faCopy, faPen, faTrashCan } from '@fortawesome/free-solid-svg-icons';
  */
 const ViewDeck = ({ deck, editMode, allowEdit, onDuplicate }) => {
     const dispatch = useDispatch();
-
+    const navigate = useNavigate();
+    const [magicHover, setMagicHover] = useState('');
+    const onDieHover = (die) => {
+        // highlight cards with dice type
+        setMagicHover(die.magic);
+    };
     const handleDeleteClick = () => {
-        dispatch(deleteDeck(deck));
+        if (confirm('Are you sure you want to delete this deck?')) {
+            dispatch(deleteDeck(deck));
+        }
     };
     const handleEditClick = () => {
-        dispatch(navigate('/decks/edit'));
+        navigate('/decks/edit');
     };
     const handleDuplicateClick = () => {
         dispatch(duplicateDeck(deck));
         onDuplicate && onDuplicate();
-    };
-    const handleUpdateClick = () => {
-        dispatch(resyncDeck(deck));
     };
 
     const apiState = useSelector((state) => {
@@ -51,24 +50,7 @@ const ViewDeck = ({ deck, editMode, allowEdit, onDuplicate }) => {
 
         return retState;
     });
-    let deleteButton = null;
-    if (deck._id) {
-        deleteButton = (
-            <ConfirmButton onClick={handleDeleteClick}>
-                <FontAwesomeIcon icon={faTrashCan} /> Delete
-            </ConfirmButton>
-        );
-    }
 
-    const ashesLiveLink = ashesLiveShareUrl + deck.ashesLiveUuid;
-
-    const writeLinkToClipboard = (event) => {
-        event.preventDefault();
-        navigator.clipboard
-            .writeText(ashesLiveLink)
-            .then(() => toastr.success('Copied url to clipboard'))
-            .catch((err) => toastr.error(`Could not copy deck url: ${err}`));
-    };
     return (
         <>
             <ApiStatus
@@ -79,50 +61,24 @@ const ViewDeck = ({ deck, editMode, allowEdit, onDuplicate }) => {
             <div className='lobby-card'>
                 <DeckHeader
                     deck={deck}
-                    showCopy={!editMode && !allowEdit}
+                    allowEdit={allowEdit}
+                    allowFave={!editMode}
+                    editMode={editMode}
+                    onEdit={handleEditClick}
                     onCopy={handleDuplicateClick}
+                    onDelete={handleDeleteClick}
+                    onDieHover={onDieHover}
                 />
-                {!editMode && allowEdit && (
-                    <div className='deck-buttons text-center'>
-                        <button className='btn btn-primary def' onClick={handleEditClick}>
-                            <FontAwesomeIcon icon={faPen} /> Edit
-                        </button>
-                        <button className='btn btn-primary def' onClick={handleDuplicateClick}>
-                            <FontAwesomeIcon icon={faCopy} /> Copy
-                        </button>
 
-                        {deleteButton}
-                        {deck.ashesLiveUuid && (
-                            <Dropdown
-                                variant='extra'
-                                className='ashes-live def'
-                                title='ashes.live'
-                                as={ButtonGroup}
-                            >
-                                <Dropdown.Toggle
-                                    split
-                                    variant='extra'
-                                    className='def'
-                                    id='dropdown-basic'
-                                >
-                                    <span className='phg-basic-magic'></span>&nbsp;
-                                </Dropdown.Toggle>
-
-                                <Dropdown.Menu>
-                                    <Dropdown.Item href='#' onClick={handleUpdateClick}>
-                                        Update
-                                    </Dropdown.Item>
-                                    <Dropdown.Item href={ashesLiveLink}>Go to ashes.live</Dropdown.Item>
-                                    <Dropdown.Item href='#' onClick={writeLinkToClipboard}>
-                                        Copy ashes.live url
-                                    </Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>
-                        )}
-                    </div>
-                )}
-
-                <DeckSummary deck={deck} editMode={editMode} />
+                <DeckSummary
+                    deck={deck}
+                    magicHover={magicHover}
+                    allowEdit={allowEdit}
+                    editMode={editMode}
+                    onEdit={handleEditClick}
+                    onCopy={handleDuplicateClick}
+                    onDelete={handleDeleteClick}
+                />
             </div>
         </>
     );

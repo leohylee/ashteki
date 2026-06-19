@@ -1,8 +1,8 @@
 @import '../../styles/variables';
 @import '../../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
-@import '~bootstrap/scss/mixins/_breakpoints';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+@import 'bootstrap/scss/mixins/_breakpoints';
 
 .form-check-inline {
     margin-bottom: 0.25rem;
@@ -11,7 +11,7 @@
 .lobby-header {
     text-align: center;
     font-size: 20px;
-    text-shadow: #FFF 1px 1px 15px;
+    text-shadow: #ccc 1px 1px 15px;
     padding: 4px 0px;
     // margin-top: 10px;
     margin-bottom: 10px;
@@ -22,9 +22,10 @@
     position: relative;
     border-radius: 0.25rem;
     box-shadow: 1px 1px 1px #666;
-    background-color: rgba(0, 0, 0, 0.65);
+    background-color: rgba(0, 0, 0, 0.5);
     border: 1px solid #666;
     margin: 4px;
+    margin-bottom: 8px;
     padding: 10px;
 
     >div {
@@ -34,6 +35,10 @@
     hr {
         border-top-color: white;
         width: 100px;
+    }
+
+    .row {
+        margin-bottom: 5px;
     }
 }
 

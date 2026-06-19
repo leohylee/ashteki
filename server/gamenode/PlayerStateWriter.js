@@ -1,4 +1,3 @@
-const _ = require('underscore');
 const { CardType } = require('../constants');
 const CardStateWriter = require('./CardStateWriter');
 const DieStateWriter = require('./DieStateWriter');
@@ -72,7 +71,7 @@ class PlayerStateWriter {
             firstPlayer: this.player.firstPlayer
         };
 
-        if (this.player.isDummy) {
+        if (this.player.isChimera || this.player.isDragonborn) {
             playerState.ultimate = this.getCardSummary(this.player.ultimate, forPlayer);
             playerState.behaviour = this.getCardSummary(this.player.behaviour, forPlayer);
         }
@@ -105,6 +104,7 @@ class PlayerStateWriter {
         if (this.player.isDummy) {
             playerState.fatigued = this.player.fatigued;
             playerState.chimeraPhase = this.player.chimeraPhase;
+            playerState.stamina = this.player.stamina;
         }
 
         if (this.player.clock) {
@@ -113,7 +113,7 @@ class PlayerStateWriter {
 
         playerState.promptState = promptState;
 
-        return _.extend(playerState, promptState);
+        return Object.assign(playerState, promptState);
     }
 
     getTypeValue(cardType) {

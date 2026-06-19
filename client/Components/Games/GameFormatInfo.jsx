@@ -55,10 +55,16 @@ const GameFormatInfo = ({ gameType: gameFormat }) => {
                     random cards. Yes, this is a fun format.
                 </AlertPanel>
             );
-        case 'solo':
+        case 'standard':
             return (
                 <AlertPanel type='info'>
-                    <strong>Solo</strong> Play single player against a chimera.
+                    <strong>Solo</strong> Play against a dragonborn or chimera following normal rules
+                </AlertPanel>
+            );
+        case 'survival':
+            return (
+                <AlertPanel type='info'>
+                    <strong>Survival</strong> See how long you can last against an increasingly difficult chimera opponent.
                 </AlertPanel>
             );
         case 'hl2pvp':

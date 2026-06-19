@@ -1,10 +1,11 @@
 @import '../../styles/variables';
 @import '../../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
 
 .deck-list {
     width: 100%;
+    margin-top: 4px;
     // overflow-y: auto;
     // height: 70vh;
 
@@ -49,7 +50,7 @@
     }
 
     .decklist-card {
-        background-color: unset;
+        // background-color: unset;
         margin: unset;
         border-bottom: 1px solid grey !important;
 
@@ -57,6 +58,10 @@
             .card-header {
                 background-color: rgba($primary, 0.7);
             }
+        }
+
+        &.invalid {
+            background-color: rgba($danger, 0.6);
         }
 
         .die {
@@ -80,7 +85,7 @@
         }
 
         .decklist-title {
-            font-size: 15px;
+            font-size: 16px;
             border: none;
             background-color: unset;
             color: white;
@@ -91,13 +96,22 @@
     .card {
         box-shadow: unset !important;
 
-        .win-rate {
-            width: 50px;
-            margin-left: auto;
-            text-align: center;
-        }
+        // .win-rate {
+        //     width: 50px;
+        //     margin-left: auto;
+        //     text-align: center;
+        // }
     }
 
+}
+
+.modal-body .decklist-card {
+    &.invalid {
+        background-color: rgba($danger, 0.8);
+        cursor: not-allowed;
+    }
+
+    cursor:pointer;
 }
 
 .pager {
@@ -146,12 +160,19 @@
     min-width: 260px;
 }
 
-.decklist-title {
-    font-size: 15px;
-}
-
 .win-rate {
     font-size: 15px;
+    color: #aaa;
+}
+
+.deck-header {
+    .decklist-entry-image {
+        &.kevin {
+            background-position: 65% 26% !important;
+            background-size: 225%;
+
+        }
+    }
 }
 
 .decklist-entry-image {
@@ -184,6 +205,30 @@
         background-image: url('https://cdn.ashes.live/images/cards/coal-roarkwin.jpg');
         background-position: 45% 20%;
         background-size: 250%;
+    }
+
+    &.issa-brightmore {
+        background-image: url('https://cdn.ashes.live/images/cards/issa-brightmore.jpg');
+        background-position: 40% 20%;
+        background-size: 230%;
+    }
+
+    &.arren-frostpeak {
+        background-image: url('https://cdn.ashes.live/images/cards/arren-frostpeak.jpg');
+        background-position: 45% 20%;
+        background-size: 300%;
+    }
+
+    &.kanna-galeheart {
+        background-image: url('https://cdn.ashteki.com/ashes/kanna/kanna-galeheart.jpg');
+        background-position: 45% 20%;
+        background-size: 300%;
+    }
+
+    &.maeve-luminvale {
+        background-image: url('https://cdn.ashteki.com/ashes/maeve/maeve-luminvale.jpg');
+        background-position: 50% 21% !important;
+        background-size: 300%;
     }
 
     &.dimona-odinstar {
@@ -230,7 +275,7 @@
 
     &.jessa-na-ni {
         background-image: url('https://cdn.ashes.live/images/cards/jessa-na-ni.jpg');
-        background-position: 50% 20%;
+        background-position: 50% 21%;
         background-size: 200%;
     }
 
@@ -318,6 +363,12 @@
         background-size: 250%;
     }
 
+    &.tash-cantasita {
+        background-image: url('https://cdn.ashteki.com/ashes/tash/tash-cantasita.jpg');
+        background-position: 50% 20%;
+        background-size: 250%;
+    }
+
     &.victoria-glassfire {
         background-image: url('https://cdn.ashes.live/images/cards/victoria-glassfire.jpg');
         background-position: 45% 20%;
@@ -361,6 +412,12 @@
         background-size: 130%;
     }
 
+    &.flood-of-moon-cove {
+        background-image: url('https://cdn.ashteki.com/ashes/mooncove/flood-of-moon-cove-1p-standard-1.jpg');
+        background-position: 50% 30%;
+        background-size: 130%;
+    }
+
     &.kevin {
         background-image: url('https://cdn.ashteki.com/KEVIN/kevin.jpg');
         background-position: 65% 20%;
@@ -377,6 +434,12 @@
         background-image: url('https://cdn.ashes.live/images/cards/sacred-ground.jpg');
         background-position: 50% 45%;
         background-size: 150%;
+    }
+
+    &.scatha-kalani {
+        background-image: url('https://cdn.ashteki.com/ashes/scatha/scatha-kalani.jpg');
+        background-position: 50% 20%;
+        background-size: 200%;
     }
 }
 

@@ -16,6 +16,7 @@ import Minus from '../../assets/img/Minus.png';
 import Plus from '../../assets/img/Plus.png';
 import FirstPlayerImage from '../../assets/img/firstplayer.png';
 import Clock from './Clock';
+import LifeRemaining from './LifeRemaining';
 import './PlayerStats.scss';
 import CardPileLink from './CardPileLink';
 import { useDispatch, useSelector } from 'react-redux';
@@ -23,7 +24,6 @@ import { sendGameMessage } from '../../redux/actions';
 import Droppable from './Droppable';
 import ConcedeLeave from './ConcedeLeave';
 import GameCountMenu from '../Navigation/GameCountMenu';
-import SpectatorIcon from './SpectatorIcon';
 import ServerStatus from '../Navigation/ServerStatus';
 
 const PlayerStats = ({
@@ -42,7 +42,6 @@ const PlayerStats = ({
     onManualModeClick,
     onManualCommandsClick,
     onMenuItemClick,
-    onPopupChange,
     onTouchMove,
     onClockZero,
     onMessagesClick,
@@ -54,12 +53,11 @@ const PlayerStats = ({
     player,
     round,
     showManualMode,
-    showMessages,
     showContextItem,
     side,
     size,
     solo,
-    winner
+    survival
 }) => {
     const dispatch = useDispatch();
     const currentGame = useSelector((state) => state.lobby.currentGame);
@@ -71,6 +69,8 @@ const PlayerStats = ({
         gameConnecting: state.games.connecting,
         gameResponse: state.games.responseTime
     }));
+
+    const showServerStatus = leftMode && side === 'top' && !isReplay;
 
     const cardPiles = player.cardPiles;
 
@@ -90,43 +90,25 @@ const PlayerStats = ({
         );
     };
 
-    const renderLifeRemaining = () => {
-        const pb = phoenixborn;
-        let pbDamage = 0;
-        let lifeClass = 'life-green';
-        let lifeValue = 0;
-
-        if (pb) {
-            const pbLife = pb.life;
-            pbDamage = phoenixborn.tokens.damage
-                ? phoenixborn.tokens.damage
-                : 0;
-            lifeValue = Math.max(0, pbLife - pbDamage);
-            if (lifeValue <= 10) {
-                lifeClass = 'life-orange';
-            }
-            if (lifeValue <= 5) {
-                lifeClass = 'life-red';
-            }
-        }
-
-        let classes = classNames('action', 'life-remaining', lifeClass);
-        return (
-            <div className='state'>
-                <span key={`life-rem`} className={classes}>
-                    {lifeValue}
-                </span>
-            </div>
-        );
-    }
-
     const renderChimeraPhase = () => {
-        return (
+        return (<>
+            {survival && <div className='state'>
+                <span key={`survival`} className='action survival'>
+                    SURVIVAL!
+                </span>
+            </div>}
             <div className='state'>
                 <span key={`chimera-phase`} className='action chimera-phase'>
                     Phase {player.chimeraPhase}
                 </span>
             </div>
+            <div className='state'>
+                <span key={`stamina`} className='action stamina'>
+                    Stamina {player.stamina}
+                </span>
+            </div>
+
+        </>
         );
     };
 
@@ -248,10 +230,6 @@ const PlayerStats = ({
                             secondsLeft={clockState.timeLeft}
                             mode={clockState.mode}
                             stateId={clockState.stateId}
-                            periods={clockState.periods}
-                            mainTime={clockState.mainTime}
-                            timePeriod={clockState.timePeriod}
-                            winner={winner}
                             onClockZero={onClockZero}
                         />
                     </div>
@@ -262,7 +240,6 @@ const PlayerStats = ({
     const pileProps = {
         isMe,
         onMenuItemClick,
-        onPopupChange,
         onTouchMove,
         manualMode: manualModeEnabled,
         onCardClick,
@@ -308,7 +285,7 @@ const PlayerStats = ({
         <div className={statsClass}>
             {playerAvatar}
             {solo && !isMe && renderChimeraPhase()}
-            {renderLifeRemaining()}
+            <LifeRemaining phoenixborn={phoenixborn} />
             {renderActions()}
             {firstPlayerToken}
             {clock}
@@ -321,7 +298,7 @@ const PlayerStats = ({
                 </>
             )}
             {playerDisconnect}
-            {showMessages && (
+            {side === 'bottom' && (
                 <div className='state chat-status'>
                     {player.deckNotes && (
                         <div className='state'>
@@ -340,7 +317,7 @@ const PlayerStats = ({
                             </a>
                         </div>
                     )}
-                    {showContextItem && showManualMode && (
+                    {showManualMode && (
                         <div className='state'>
                             <a
                                 href='#'
@@ -348,7 +325,7 @@ const PlayerStats = ({
                                 onClick={onManualModeClick}
                             >
                                 <FontAwesomeIcon icon={faWrench}></FontAwesomeIcon>
-                                <span className='ml-1'>Manual Mode</span>
+                                {!leftMode && <span className='ml-1'> Manual Mode</span>}
                             </a>
                             &nbsp;
                             <a href='#' className='pr-1 pl-1' title='Show manual command list'>
@@ -356,14 +333,13 @@ const PlayerStats = ({
                             </a>
                         </div>
                     )}
-                    {showContextItem && (
-                        <div className='state'>
-                            <a href='#' onClick={onSettingsClick} className='pr-1 pl-1'>
-                                <FontAwesomeIcon icon={faCogs}></FontAwesomeIcon>
-                                <span className='ml-1'>Settings</span>
-                            </a>
-                        </div>
-                    )}
+
+                    <div className='state'>
+                        <a href='#' onClick={onSettingsClick} className='pr-1 pl-1'>
+                            {!leftMode && <span className='ml-1'>Settings </span>}
+                            <FontAwesomeIcon icon={faCogs}></FontAwesomeIcon>
+                        </a>
+                    </div>
                     <div className='state'>
                         <a href='#' onClick={onMessagesClick} className='pl-1' title='Toggle chat'>
                             <FontAwesomeIcon icon={faComment}></FontAwesomeIcon>
@@ -371,11 +347,12 @@ const PlayerStats = ({
                     </div>
                 </div>
             )}
-            {!showMessages && !leftMode && (
+            {!leftMode && side === 'top' && (
                 <>
                     <div className='state chat-status'>
+                        {showContextItem && <ConcedeLeave showText={true} />}
+                        &nbsp;|&nbsp;
                         <GameCountMenu />
-                        {showContextItem && <ConcedeLeave showText={!isSpectating} />}
                         &nbsp;|&nbsp;
                         <ServerStatus
                             connected={gameConnected}
@@ -383,12 +360,10 @@ const PlayerStats = ({
                             serverType='Game server'
                             responseTime={gameResponse}
                         />
-                        &nbsp;|&nbsp;Round&nbsp;{round}&nbsp;|&nbsp;
-                        <SpectatorIcon />
                     </div>
                 </>
             )}
-            {!showMessages && leftMode && !isReplay && (
+            {showServerStatus && (
                 <div className='state chat-status'>
                     <ServerStatus
                         connected={gameConnected}
@@ -396,10 +371,8 @@ const PlayerStats = ({
                         serverType='Game server'
                         responseTime={gameResponse}
                     />
-
                 </div>
             )}
-            {!showMessages && leftMode && isReplay && <div className='state chat-status'>REPLAY</div>}
         </div>
     );
 };

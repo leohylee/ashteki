@@ -3,6 +3,7 @@ const monk = require('monk');
 const util = require('../util.js');
 const DeckForge = require('./generator/deckForge.js');
 const Carousel = require('./generator/carousel.js');
+const { search } = require('../game/GameActions.js');
 
 class AshesDeckService {
     constructor(configService, db) {
@@ -43,10 +44,20 @@ class AshesDeckService {
         });
     }
 
+    getDragonbornDeck() {
+        return this.preconDecks.findOne({ mode: 'dragonborn' }).catch((err) => {
+            logger.error('Unable to fetch a dragonborn deck', err);
+            throw new Error('Unable to fetch a dragonborn deck ');
+        });
+    }
+
     getPreconDecks(preconGroup = 1) {
         return this.preconDecks.find({ 'precon_group': preconGroup }, { sort: { precon_id: 1 } });
     }
 
+    getAllPreconDecks() {
+        return this.preconDecks.find({}, { sort: { precon_id: 1 } });
+    }
     getPrecons() {
         return this.preconDecks.find({ precon_group: { $in: [1, 6] } }, { sort: { precon_id: 1 } });
     }
@@ -74,6 +85,7 @@ class AshesDeckService {
                 }
             }
         }
+        const isChimera = options && options.chimera;
         const searchFields = { username: userName };
         if (nameSearch !== '') {
             searchFields.name = { $regex: nameSearch, $options: 'i' };
@@ -84,6 +96,12 @@ class AshesDeckService {
         if (faveSearch) {
             searchFields['favourite'] = true;
         }
+        if (isChimera) {
+            searchFields.mode = 'chimera';
+        } else {
+            searchFields.mode = { $ne: 'chimera' };
+        }
+
         return await this.decks.find(searchFields, {
             // sort: { [options.sort]: options.sortDir == 'desc' ? -1 : 1 },
             // skip: skip,
@@ -112,6 +130,7 @@ class AshesDeckService {
 
         let newDeck = this.parseAshesLiveDeckResponse(user, deckResponse);
         newDeck.ashesLiveUuid = deck.uuid;
+        newDeck.ashesDb = deck.ashesDb;
 
         // is this an update
         let response;
@@ -131,9 +150,8 @@ class AshesDeckService {
     async getAshesLiveDeck(deck, resync) {
         try {
             // get by uuid (private share, or snapshot)
-            let response = await util.httpRequest(
-                `https://api.ashes.live/v2/decks/shared/${deck.uuid}`
-            );
+            let domain = deck.ashesDb ? 'apiasheslive.plaidhatgames.com' : 'api.ashes.live';
+            let response = await util.httpRequest(`https://${domain}/v2/decks/shared/${deck.uuid}`);
 
             if (response[0] === '<') {
                 logger.error('Deck failed to import: %s %s', deck.uuid, response);
@@ -146,9 +164,7 @@ class AshesDeckService {
             if (resync && deckResponse.is_snapshot && deckResponse.source_id) {
                 const sourceDeckId = deckResponse.source_id;
                 // get latest published deck by deck id
-                response = await util.httpRequest(
-                    `https://api.ashes.live/v2/decks/${sourceDeckId}`
-                );
+                response = await util.httpRequest(`https://${domain}/v2/decks/${sourceDeckId}`);
 
                 if (response[0] === '<') {
                     logger.error('Deck failed to import by id: %s %s', sourceDeckId, response);
@@ -204,7 +220,8 @@ class AshesDeckService {
             lastUpdated: new Date(),
             created: new Date(),
             ashesLiveUuid: deck.ashesLiveUuid,
-            ashesLiveModified: deck.ashesLiveModified
+            ashesLiveModified: deck.ashesLiveModified,
+            ashesDb: deck.ashesDb
         };
 
         // Include mode field if present (e.g., 'draft')
@@ -217,6 +234,7 @@ class AshesDeckService {
                 precon_id: deck.precon_id,
                 precon_group: deck.preconGroup,
                 precon_set: deck.precon_set,
+                groupName: deck.groupName,
                 premium: deck.premium,
                 listClass: deck.listClass,
                 restricted: deck.restricted

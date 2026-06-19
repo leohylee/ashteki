@@ -1,31 +1,55 @@
 import React, { useState } from 'react';
-import { Col, Row, ToggleButton, ToggleButtonGroup } from 'react-bootstrap';
+import { Col, Dropdown, Row, ToggleButton, ToggleButtonGroup } from 'react-bootstrap';
 import './DeckSummary.scss';
 import CardListText from './CardListText';
 import CardListImg from './CardListImg';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faImage, faList } from '@fortawesome/free-solid-svg-icons';
-import DeckDice from './DeckDice';
-import { useDispatch } from 'react-redux';
-import { swapDeckCard, changeCardQuantity } from '../../redux/actions';
+import { faCopy, faPen, faTrashCan } from '@fortawesome/free-solid-svg-icons';
 
-const DeckSummary = ({ deck, editMode }) => {
+import DeckStatus from './DeckStatus';
+import { ashesDbShareUrl, ashesLiveShareUrl } from '../../util';
+import { useDispatch } from 'react-redux';
+import { resyncDeck, swapDeckCard, changeCardQuantity } from '../../redux/actions';
+import { toast } from 'react-toastify';
+
+const DeckSummary = ({ deck, editMode, allowEdit, onEdit, onCopy, onDelete, magicHover }) => {
     const dispatch = useDispatch();
 
-    const [radioValue, setRadioValue] = useState(false);
-    const [magicHover, setMagicHover] = useState('');
+    const [showCardPictures, setShowCardPictures] = useState(false);
 
     if (!deck) return null;
+    const isChimera = deck.mode === 'chimera';
 
-    const onDieClick = (die) => {
-        if (editMode) {
-            alert(die.magic);
+    const handleEditClick = () => {
+        if (onEdit) {
+            onEdit();
         }
     };
+    const handleCopyClick = () => {
+        if (onCopy) {
+            onCopy();
+        }
+    };
+    const handleDeleteClick = () => {
+        if (onDelete) {
+            onDelete();
+        }
+    };
+    const handleUpdateClick = () => {
+        dispatch(resyncDeck(deck));
+    };
 
-    const onDieHover = (die) => {
-        // highlight cards with dice type
-        setMagicHover(die.magic);
+    const ashesLiveLink =
+        (deck?.ashesDb ? ashesDbShareUrl : ashesLiveShareUrl) + deck?.ashesLiveUuid;
+    const siteName = deck?.ashesDb ? 'ashesdb' : 'ashes.live';
+
+    const writeLinkToClipboard = (event) => {
+        event.preventDefault();
+        navigator.clipboard
+            .writeText(ashesLiveLink)
+            .then(() => toast.success('Copied url to clipboard'))
+            .catch((err) => toast.error(`Could not copy deck url: ${err}`));
     };
 
     const onFFClick = (cardId) => {
@@ -52,23 +76,14 @@ const DeckSummary = ({ deck, editMode }) => {
 
     return (
         <Col className='deck-summary'>
-            <DeckDice
-                size='large'
-                deck={deck}
-                slotCount={10}
-                onDieClick={onDieClick}
-                onDieHover={onDieHover}
-            />
             <div className='deck-cards-header'>
-                <ToggleButtonGroup name="radio" value={radioValue}>
+                <ToggleButtonGroup name="radio" value={showCardPictures}>
                     <ToggleButton
                         key={'rad-0'}
                         id={`radio-0`}
                         type="radio"
-                        // variant={idx % 2 ? 'outline-success' : 'outline-danger'}
                         value={false}
-                        // checked={radioValue === false}
-                        onChange={(e) => setRadioValue(false)}
+                        onChange={(e) => setShowCardPictures(false)}
                         className='mini'
                     >
                         <FontAwesomeIcon icon={faList} title='Show menu' />
@@ -77,23 +92,87 @@ const DeckSummary = ({ deck, editMode }) => {
                         key={'rad-1'}
                         id={`radio-1`}
                         type="radio"
-                        // variant={'outline'}
                         value={true}
-                        // checked={radioValue}
-                        onChange={(e) => setRadioValue(true)}
+                        onChange={(e) => setShowCardPictures(true)}
                         className='mini'
                     >
                         <FontAwesomeIcon icon={faImage} title='Show menu' />
                     </ToggleButton>
                 </ToggleButtonGroup>
-                <div className='total-box'>Total: {cardCount}</div>
+                <div className='deck-header-buttons'>
+                    <div className='total-box'>{cardCount}</div>
+                    {deck && <DeckStatus deck={deck} status={deck.status} />}
+                    {deck && (
+                        <Dropdown title='edit' className='deck-edit-dd'>
+                            <Dropdown.Toggle
+                                variant='primary'
+                                className='def deck-edit-btn'
+                                id='dropdown-basic'
+                            >
+                                <FontAwesomeIcon icon={faPen} />&nbsp;
+                            </Dropdown.Toggle>
+
+                            <Dropdown.Menu>
+                                {!deck.precon_id && (
+                                    <Dropdown.Item href='#' onClick={handleEditClick}>
+                                        <FontAwesomeIcon icon={faPen} /> Edit
+                                    </Dropdown.Item>
+                                )}
+                                <Dropdown.Item href='#' onClick={handleCopyClick}>
+                                    <FontAwesomeIcon icon={faCopy} /> Copy
+                                </Dropdown.Item>
+                                {!deck.precon_id && (
+                                    <Dropdown.Item href='#' onClick={handleDeleteClick}>
+                                        <FontAwesomeIcon icon={faTrashCan} /> Delete
+                                    </Dropdown.Item>
+                                )}
+                            </Dropdown.Menu>
+                        </Dropdown>
+                    )}
+                    {!editMode && allowEdit && (
+                        <div className='deck-buttons text-center'>
+                            {deck.ashesLiveUuid && (
+                                <Dropdown
+                                    variant='warning'
+                                    className='ashes-live def'
+                                    title={siteName}
+                                >
+                                    <Dropdown.Toggle
+                                        split
+                                        variant='warning'
+                                        className='def'
+                                        id='dropdown-basic'
+                                    >
+                                        <span className='phg-basic-magic'></span>&nbsp;
+                                    </Dropdown.Toggle>
+
+                                    <Dropdown.Menu>
+                                        <Dropdown.Item href='#' onClick={handleUpdateClick}>
+                                            Update
+                                        </Dropdown.Item>
+                                        <Dropdown.Item href={ashesLiveLink}>Go to {siteName}</Dropdown.Item>
+                                        <Dropdown.Item href='#' onClick={writeLinkToClipboard}>
+                                            Copy {siteName} url
+                                        </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
-            <Row className='deck-cards'>
-                {radioValue ? (
+            <div className='deck-cards'>
+                {showCardPictures ? (
                     <>
-                        <div className='basic-title'>Main</div>
-                        <div className='basic-title'>First Five</div>
-                        <CardListImg deckCards={deck.cards.filter((c) => c.ff)} noIndex={true} />
+                        {deck.mode !== 'chimera' && (
+                            <>
+                                <div className='basic-title'>First Five</div>{' '}
+                                <CardListImg
+                                    deckCards={deck.cards.filter((c) => c.ff)}
+                                    noIndex={true}
+                                />
+                            </>
+                        )}
                         <div className='basic-title'>All Cards</div>
 
                         <CardListImg deckCards={deck.cards} />
@@ -108,7 +187,6 @@ const DeckSummary = ({ deck, editMode }) => {
                     </>
                 ) : (
                     <>
-                        <div className='basic-title'>Main</div>
                         <CardListText
                             deckCards={combinedCards}
                             highlight={magicHover}
@@ -135,11 +213,9 @@ const DeckSummary = ({ deck, editMode }) => {
                         )}
                     </>
                 )}
-            </Row>
-            <Row>
-                <div className='deck-card-group deck-notes'>{deck.notes}</div>
-            </Row>
-            {deck.played && (
+            </div>
+            <div className='deck-card-group deck-notes'>{deck.notes}</div>
+            {deck.played > 0 && (
                 <Row>
                     <Col sm='9'>
                         <table style={{ width: '100%' }}>

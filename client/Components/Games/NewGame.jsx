@@ -33,6 +33,7 @@ const NewGame = ({ defaultGameType, defaultPrivate, defaultTimeLimit, onClosed }
     const lobbySocket = useSelector((state) => state.lobby.socket);
     const username = useSelector((state) => state.account.user?.username);
     const newGameType = useSelector((state) => state.lobby.newGameType);
+    const isSolo = ['chimera', 'dragonborn'].includes(newGameType);
     const user = useSelector((state) => state.account.user);
     const allowPremium = user?.patreon === PatreonStatus.Pledged || user?.permissions?.isSupporter;
 
@@ -59,18 +60,19 @@ const NewGame = ({ defaultGameType, defaultPrivate, defaultTimeLimit, onClosed }
         name: `${username}'s game`,
         password: '',
         label: '',
-        allowSpectators: true,
+        allowSpectators: newGameType !== 'dragonborn',
         gameType: defaultGameType || 'casual',
         newGameType: newGameType,
-        gameFormat: newGameType === 'chimera' ? 'solo' : 'constructed',
+        gameFormat: isSolo ? 'standard' : 'constructed',
         useGameTimeLimit: !!defaultTimeLimit,
         gameTimeLimit: defaultTimeLimit || 30,
         clockType: 'chess',
         gamePrivate: defaultPrivate,
         ranked: false,
-        solo: newGameType === 'chimera',
+        solo: isSolo,
         saveReplay: false
     };
+    // solo: ['chimera', 'bot'].includes(newGameType),
 
     const options = [
         { name: 'ranked', label: 'Ranked (affects Elo rating)' },
@@ -197,10 +199,11 @@ const NewGame = ({ defaultGameType, defaultPrivate, defaultTimeLimit, onClosed }
                                                 {formProps.errors.name}
                                             </Form.Control.Feedback>
 
-                                            {newGameType === 'chimera' &&
+                                            {['chimera', 'bot', 'dragonborn'].includes(newGameType) &&
                                                 soloOptions.map((option) =>
                                                     getOptionToggle(option, formProps)
-                                                )}
+                                                )
+                                            }
                                             {newGameType === 'pvp' && (
                                                 <div className='mt-3'>
                                                     <Form.Label>League Presets</Form.Label>
@@ -222,9 +225,9 @@ const NewGame = ({ defaultGameType, defaultPrivate, defaultTimeLimit, onClosed }
                                         </Form.Group>
                                     </Col>
                                 </div>
+                                {!isSolo && <GameFormats formProps={formProps} />}
                                 {newGameType === 'pvp' && (
                                     <>
-                                        <GameFormats formProps={formProps} />
                                         <Form.Group className='mb-3'>
                                             <Row>
                                                 <h3 >Options</h3>

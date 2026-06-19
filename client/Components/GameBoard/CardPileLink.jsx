@@ -14,11 +14,11 @@ const CardPileLink = ({
     disablePopup,
     manualMode,
     numDeckCards,
+    showAlphaSort,
     onCardClick,
     onDragDrop,
     onMouseOut,
     onMouseOver,
-    onPopupChange,
     onTouchMove,
     orientation,
     popupLocation,
@@ -32,10 +32,8 @@ const CardPileLink = ({
     const updatePopupVisibility = useCallback(
         (value) => {
             setShowPopup(value);
-
-            onPopupChange && onPopupChange({ source: source, visible: value });
         },
-        [source, onPopupChange]
+        [source]
     );
 
     useEffect(() => {
@@ -85,6 +83,8 @@ const CardPileLink = ({
                     cards={cards}
                     disableMouseOver={disableMouseOver}
                     manualMode={manualMode}
+                    showAlphaSort={showAlphaSort}
+
                     onCardClick={(card) => {
                         if (closeOnClick) {
                             updatePopupVisibility(false);

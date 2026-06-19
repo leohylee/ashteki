@@ -1,5 +1,3 @@
-import React from 'react';
-
 const urlMatchingRegex = new RegExp(
     /(?:(?:https?|ftp):\/\/)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]+-?)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?:\/[^\s]*)?/,
     'ig'
@@ -18,6 +16,11 @@ export function imageUrl(cardStub) {
 
 export const getCardBack = (card) => {
     if (card.blood) {
+        if (card.controller === 'Dragonborn') {
+            return card.blood === 2
+                ? 'https://cdn.ashteki.com/ashes/db-back-2.jpg'
+                : 'https://cdn.ashteki.com/ashes/db-back-1.jpg';
+        }
         return card.blood === 2 ? 'back-blood-2' : 'back-blood-1';
     }
     return card.isConjuration ? 'back-conjuration' : 'back';
@@ -45,24 +48,24 @@ export function tryParseJSON(jsonString) {
     return false;
 }
 
-export function getMessageWithLinks(message) {
-    let tokens = message.split(/\s/);
+// export function getMessageWithLinks(message) {
+//     let tokens = message.split(/\s/);
 
-    let i = 0;
-    let parts = tokens.map((token) => {
-        if (token.match(urlMatchingRegex)) {
-            return (
-                <a key={`link-${i++}`} href={token} target='_blank' rel='noopener noreferrer'>
-                    {token}&nbsp;
-                </a>
-            );
-        }
+//     let i = 0;
+//     let parts = tokens.map((token) => {
+//         if (token.match(urlMatchingRegex)) {
+//             return (
+//                 <a key={`link-${i++}`} href={token} target='_blank' rel='noopener noreferrer'>
+//                     {token}&nbsp;
+//                 </a>
+//             );
+//         }
 
-        return token + ' ';
-    });
+//         return token + ' ';
+//     });
 
-    return parts;
-}
+//     return parts;
+// }
 
 export const getStandardControlProps = (formProps, controlName) => ({
     name: controlName,
@@ -83,22 +86,34 @@ export const getRankedLabel = (name) => {
 
 export const getGameTypeLabel = (gameType) => {
     switch (gameType) {
-        case 'chimera':
+        case gameTypes.chimera:
             return 'Chimera';
-        case 'league':
+        case gameTypes.league:
             return 'League';
         default:
             return 'Player';
     }
 };
 
+export const gameTypes = Object.freeze({
+    pvp: 'pvp',
+    chimera: 'chimera',
+    dragonborn: 'dragonborn',
+    league: 'league',
+    bot: 'bot'
+});
+
 export const gameFormats = [
     { name: 'precon', label: 'Precon' },
     { name: 'hl2pvp', label: 'Heroic Level 2' },
     { name: 'constructed', label: 'Constructed' },
     { name: 'coaloff', label: 'Coal Off!' },
-    { name: 'solo', label: 'Solo' },
     { name: 'onecollection', label: 'One Collection Battlebox' }
+];
+
+export const soloGameFormats = [
+    { name: 'standard', label: 'Solo' },
+    { name: 'survival', label: 'Survival' }
 ];
 
 export const cardSizes = [
@@ -109,7 +124,7 @@ export const cardSizes = [
 ];
 
 export const getFormatLabel = (name) => {
-    const format = gameFormats.find((f) => f.name === name);
+    const format = gameFormats.find((f) => f.name === name) || soloGameFormats.find((f) => f.name === name);
     return format?.label;
 };
 
@@ -126,6 +141,7 @@ export const toBase64 = (file) =>
     });
 
 export const ashesLiveShareUrl = 'https://ashes.live/decks/share/';
+export const ashesDbShareUrl = 'https://ashesdb.plaidhatgames.com/decks/share/';
 
 const sizes = ['small', 'normal', 'large', 'x-large']
 export function sizeUp(size) {

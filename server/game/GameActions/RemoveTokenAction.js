@@ -1,3 +1,4 @@
+const { BattlefieldTypes, PhoenixbornTypes, UpgradeCardTypes, CardType } = require('../../constants');
 const CardGameAction = require('./CardGameAction');
 
 class RemoveTokenAction extends CardGameAction {
@@ -15,14 +16,10 @@ class RemoveTokenAction extends CardGameAction {
     setup() {
         this.name = 'removeToken';
         this.targetType = [
-            'Conjuration',
-            'Ally',
-            'Ready Spell',
-            'Phoenixborn',
-            'Alteration Spell',
-            'Aspect',
-            'Chimera',
-            'Conjured Aspect'
+            ...BattlefieldTypes,
+            ...PhoenixbornTypes,
+            ...UpgradeCardTypes,
+            CardType.ReadySpell
         ];
 
         let type = this.type;
@@ -65,10 +62,9 @@ class RemoveTokenAction extends CardGameAction {
                 if (this.showMessage) {
                     context.game.addMessage(
                         event.amount == 1
-                            ? `{0} uses {1} to remove {2} {3} token from {4}`
-                            : `{0} uses {1} to remove {2} {3} tokens from {4}`,
+                            ? `{0} removes {1} {2} token from {3}`
+                            : `{0} removes {1} {2} tokens from {3}`,
                         context.player,
-                        context.source,
                         this.all ? 'all' : event.amount,
                         event.type == 'damage' ? 'wound' : event.type,
                         event.card

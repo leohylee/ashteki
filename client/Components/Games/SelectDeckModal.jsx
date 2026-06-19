@@ -5,41 +5,42 @@ import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 import './SelectDeckModal.scss';
 import { useDispatch, useSelector } from 'react-redux';
-import { loadDecks } from '../../redux/actions/deck.js';
+import { loadDecks, loadMyChimeraDecks } from '../../redux/actions/deck.js';
 import DeckFilter from '../Decks/DeckFilter.jsx';
 import debounce from 'lodash.debounce';
 import { PatreonStatus } from '../../types/patreon.js';
 import DeckGrid from '../Decks/DeckGrid.jsx';
 
-const SelectDeckModal = ({ gameFormat, onClose, onDeckSelected, onChooseForMe, playerIsMe }) => {
+const SelectDeckModal = ({ gameFormat, newGameType, onClose, onDeckSelected, onChooseForMe, playerIsMe }) => {
     const user = useSelector((state) => state.account.user);
     const showRestricted = user?.permissions.canVerifyDecks;
     const allowPremium = user?.patreon === PatreonStatus.Pledged || user?.permissions?.isSupporter;
+    const isSolo = ['standard', 'survival'].includes(gameFormat);
 
     const {
         myDecks,
+        myChimeraDecks,
         standaloneDecks,
         adventuringPartyDecks,
-        buildingBasicsDecks,
-        corpseRebuildDecks,
         firstAdventureDecks,
         chimeraDecks,
         pveDecks,
-        msuDecks,
         dualDuelDecks,
-        oneCollectionDecks
+        oneCollectionDecks,
+        ascendancyDecks,
+        dragonbornDecks
     } = useSelector((state) => ({
         myDecks: state.cards.decks,
+        myChimeraDecks: state.cards.myChimeraDecks,
         standaloneDecks: state.cards.standaloneDecks,
         adventuringPartyDecks: state.cards.adventuringPartyDecks,
-        buildingBasicsDecks: state.cards.buildingBasicsDecks,
-        corpseRebuildDecks: state.cards.corpseRebuildDecks,
         firstAdventureDecks: state.cards.firstAdventureDecks,
         chimeraDecks: state.cards.chimeraDecks?.filter((d) => showRestricted || !d.restricted),
         pveDecks: state.cards.pveDecks?.filter((d) => showRestricted || !d.restricted),
-        msuDecks: state.cards.msuDecks,
         dualDuelDecks: state.cards.dualDuelDecks,
-        oneCollectionDecks: state.cards.oneCollectionDecks
+        oneCollectionDecks: state.cards.oneCollectionDecks,
+        ascendancyDecks: state.cards.ascendancyDecks?.filter((d) => showRestricted || !d.restricted),
+        dragonbornDecks: state.cards.dragonbornDecks
     }));
     const [pbFilter, setPbFilter] = useState('');
     const [nameFilter, setNameFilter] = useState('');
@@ -61,8 +62,12 @@ const SelectDeckModal = ({ gameFormat, onClose, onDeckSelected, onChooseForMe, p
             filter: filter
         };
 
-        dispatch(loadDecks(pagingDetails));
-    }, [nameFilter, pbFilter, showFaves, dispatch]);
+        if (newGameType === 'chimera' && !playerIsMe) {
+            dispatch(loadMyChimeraDecks(pagingDetails));
+        } else {
+            dispatch(loadDecks(pagingDetails));
+        }
+    }, [nameFilter, pbFilter, showFaves, dispatch, newGameType, playerIsMe]);
 
     let onNameChange = debounce((event) => {
         event.preventDefault();
@@ -80,19 +85,17 @@ const SelectDeckModal = ({ gameFormat, onClose, onDeckSelected, onChooseForMe, p
 
     let deckList = null;
     let setIndex = 0;
-    if (['constructed', 'hl2pvp'].includes(gameFormat) || (gameFormat === 'solo' && playerIsMe)) {
+    if (['constructed', 'hl2pvp'].includes(gameFormat) || (isSolo && playerIsMe)) {
         deckList = (
             <Tabs>
                 <TabList>
                     <Tab>My Decks</Tab>
-                    <Tab>Precons</Tab>
+                    <Tab>Ascendancy Precons</Tab>
+                    <Tab>Reborn Precons</Tab>
                     <Tab>Red Rains Precons</Tab>
-                    <Tab>Building Basics</Tab>
-                    <Tab>Corpse Rebuild</Tab>
                     <Tab>Adventuring Party</Tab>
-                    <Tab>Master Set Upgrade</Tab>
                     <Tab>Dual Duel</Tab>
-                    {gameFormat === 'solo' && playerIsMe && <Tab>One Collection Battlebox</Tab>}
+                    {isSolo && playerIsMe && <Tab>One Collection Battlebox</Tab>}
                 </TabList>
 
                 <TabPanel>
@@ -107,35 +110,26 @@ const SelectDeckModal = ({ gameFormat, onClose, onDeckSelected, onChooseForMe, p
                     <DeckList onDeckSelected={onDeckSelected} decks={myDecks} showWinRate={true} />
                 </TabPanel>
                 <TabPanel>
+                    <Button onClick={() => onChooseForMe(11)}>Choose for me</Button>
+                    <DeckList decks={ascendancyDecks} onDeckSelected={onDeckSelected} />
+                </TabPanel>
+                <TabPanel>
                     <Button onClick={() => onChooseForMe(1)}>Choose for me</Button>
                     <DeckList decks={standaloneDecks} onDeckSelected={onDeckSelected} />
-                </TabPanel>
-                <TabPanel>
+                </TabPanel>                <TabPanel>
                     <Button onClick={() => onChooseForMe(6)}>Choose for me</Button>
                     <DeckList decks={pveDecks} onDeckSelected={onDeckSelected} />
-                </TabPanel>
-                <TabPanel>
-                    <Button onClick={() => onChooseForMe(3)}>Choose for me</Button>
-                    <DeckList decks={buildingBasicsDecks} onDeckSelected={onDeckSelected} />
-                </TabPanel>
-                <TabPanel>
-                    <Button onClick={() => onChooseForMe(9)}>Choose for me</Button>
-                    <DeckList decks={corpseRebuildDecks} onDeckSelected={onDeckSelected} />
                 </TabPanel>
                 <TabPanel>
                     <Button onClick={() => onChooseForMe(2)}>Choose for me</Button>
                     <DeckList decks={adventuringPartyDecks} onDeckSelected={onDeckSelected} />
                 </TabPanel>
                 <TabPanel>
-                    <Button onClick={() => onChooseForMe(7)}>Choose for me</Button>
-                    <DeckList decks={msuDecks} onDeckSelected={onDeckSelected} />
-                </TabPanel>
-                <TabPanel>
                     <Button onClick={() => onChooseForMe(8)}>Choose for me</Button>
                     <DeckList decks={dualDuelDecks} onDeckSelected={onDeckSelected} />
                 </TabPanel>
 
-                {gameFormat === 'solo' && playerIsMe && (
+                {isSolo && playerIsMe && (
                     <TabPanel>
                         <Button onClick={() => onChooseForMe(10)}>Choose for me</Button>
                         <DeckList decks={oneCollectionDecks} onDeckSelected={onDeckSelected} />
@@ -147,28 +141,69 @@ const SelectDeckModal = ({ gameFormat, onClose, onDeckSelected, onChooseForMe, p
         deckList = (
             <Tabs>
                 <TabList>
-                    <Tab>Precons</Tab>
+                    <Tab>Ascendancy Precons</Tab>
+                    <Tab>Reborn Precons</Tab>
                     <Tab>Red Rains Precons</Tab>
                 </TabList>
 
                 <TabPanel>
-                    <Button onClick={() => onChooseForMe(1)}>Choose for me</Button>
-                    <DeckList decks={standaloneDecks} onDeckSelected={onDeckSelected} />
+                    <Button onClick={() => onChooseForMe(11)}>Choose for me</Button>
+                    <DeckList decks={ascendancyDecks} onDeckSelected={onDeckSelected} />
                 </TabPanel>
                 <TabPanel>
+                    <Button onClick={() => onChooseForMe(1)}>Choose for me</Button>
+                    <DeckList decks={standaloneDecks} onDeckSelected={onDeckSelected} />
+                </TabPanel>                <TabPanel>
                     <Button onClick={() => onChooseForMe(6)}>Choose for me</Button>
                     <DeckList decks={pveDecks} onDeckSelected={onDeckSelected} />
                 </TabPanel>
             </Tabs>
         );
+    } else if (isSolo && newGameType === 'chimera') {
+        deckList = (
+            <Tabs>
+                <TabList>
+                    <Tab>Chimera Precons</Tab>
+                    <Tab>My Decks</Tab>
+                </TabList>
+                <TabPanel>
+                    {/* <Button onClick={() => onChooseForMe(11)}>Choose for me</Button> */}
+                    <DeckGrid decks={chimeraDecks} onDeckSelected={onDeckSelected} />
+                </TabPanel>
+                <TabPanel>
+                    {/* <Button onClick={() => onChooseForMe(0)}>Choose for me</Button> */}
+                    <DeckFilter
+                        onNameChange={onNameChange}
+                        onPbChange={onPbChange}
+                        handleFaveChange={handleFaveChange}
+                        showButtons={false}
+                    />
+
+                    <DeckList onDeckSelected={onDeckSelected} decks={myChimeraDecks} />
+                </TabPanel>
+
+            </Tabs>
+        );
+    } else if (isSolo && newGameType === 'dragonborn') {
+        deckList = (
+            <div>
+                {showChooseForMe && (
+                    <Button onClick={() => onChooseForMe(7)}>Choose for me</Button>
+                )}
+                <DeckGrid decks={dragonbornDecks} onDeckSelected={onDeckSelected} />
+            </div>
+        );
+
+
     } else {
         let decks = null;
         switch (gameFormat) {
-            case 'solo':
-                setIndex = 5;
-                decks = chimeraDecks;
-                showChooseForMe = allowPremium;
-                break;
+            // case 'standard':
+            // case 'survival':
+            //     setIndex = 5;
+            //     decks = chimeraDecks;
+            //     showChooseForMe = allowPremium;
+            //     break;
             case 'firstadventure':
                 setIndex = 4;
                 decks = firstAdventureDecks;
@@ -194,16 +229,14 @@ const SelectDeckModal = ({ gameFormat, onClose, onDeckSelected, onChooseForMe, p
     }
 
     return (
-        <>
-            <Modal show={true} onHide={onClose}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Select Deck</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <div>{deckList}</div>
-                </Modal.Body>
-            </Modal>
-        </>
+        <Modal show={true} onHide={onClose} className='select-deck-modal'>
+            <Modal.Header closeButton>
+                <Modal.Title>Select Deck</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <div>{deckList}</div>
+            </Modal.Body>
+        </Modal>
     );
 };
 

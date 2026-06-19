@@ -10,7 +10,9 @@ class RecoveryPhase extends Phase {
             new SimpleStep(game, () => this.recoverWounds()),
             new SimpleStep(game, () => this.removeRedRains()),
             new SimpleStep(game, () => this.removeExhaustion()),
+            new SimpleStep(game, () => this.removeHostedDice()),
             new PinDicePrompt(game),
+            new SimpleStep(game, () => this.advanceSurvivalThreat()),
             new SimpleStep(game, () => this.replenishAspects()),
             new SimpleStep(game, () => this.placeRedRains()),
             new SimpleStep(game, () => this.replenishAspectStatusTokens())
@@ -26,7 +28,7 @@ class RecoveryPhase extends Phase {
     }
 
     removeRedRains() {
-        if (!this.game.solo) {
+        if (!this.game.isChimera) {
             return;
         }
 
@@ -57,8 +59,25 @@ class RecoveryPhase extends Phase {
         return;
     }
 
+    removeHostedDice() {
+        this.game.addMessage('All hosted dice are exhausted.');
+        const upgrades = this.game.cardsInPlay.reduce(
+            (acc, c) => (c.upgrades ? acc.concat(c.upgrades) : acc),
+            []
+        );
+        const allCardsInPlay = this.game.cardsInPlay.concat(upgrades);
+        const hostedDice = allCardsInPlay.reduce(
+            (acc, c) => (c.dieUpgrades ? acc.concat(c.dieUpgrades) : acc),
+            []
+        )
+        this.game.actions
+            .detachDie()
+            .resolve(hostedDice, this.game.getFrameworkContext());
+        return;
+    }
+
     placeRedRains() {
-        if (!this.game.solo) {
+        if (!this.game.isChimera) {
             return;
         }
 
@@ -71,8 +90,23 @@ class RecoveryPhase extends Phase {
             .resolve(dummyPlayer.phoenixborn, this.game.getFrameworkContext(dummyPlayer));
     }
 
+    advanceSurvivalThreat() {
+        if (!this.game.isSurvival) {
+            return;
+        }
+
+        this.game.addMessage('The Chimera threat level increases by 1.');
+        const dummyPlayer = this.game.getDummyPlayer();
+        this.game.actions
+            .addToken({
+                type: 'threat',
+                amount: 1
+            })
+            .resolve(dummyPlayer.chimera, this.game.getFrameworkContext(dummyPlayer));
+    }
+
     replenishAspects() {
-        if (!this.game.solo) {
+        if (!this.game.isChimera) {
             return;
         }
 
@@ -84,7 +118,7 @@ class RecoveryPhase extends Phase {
     }
 
     replenishAspectStatusTokens() {
-        if (!this.game.solo) {
+        if (!this.game.isChimera) {
             return;
         }
 

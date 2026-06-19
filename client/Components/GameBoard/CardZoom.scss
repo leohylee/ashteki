@@ -1,14 +1,15 @@
 @import '../../styles/variables';
 @import '../../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
 
 .card-zoom {
     right: 5px;
     top: 5px;
     position: absolute;
     z-index: $layer-top;
-    pointer-events: none;
+    cursor: zoom-out;
+    // pointer-events: none;
 
     &.small {
         width: $keyteki-card-width * 3;

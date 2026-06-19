@@ -26,6 +26,15 @@ export function loadDecks(options = {}) {
     };
 }
 
+export function loadMyChimeraDecks(options = {}) {
+    options.chimera = true;
+    return {
+        types: ['REQUEST_CHIMERA_DECKS', 'CHIMERA_DECKS_RECEIVED'],
+        shouldCallAPI: () => true,
+        APIParams: { url: '/api/decks', cache: false, data: options }
+    };
+}
+
 export function loadDeck(deckId) {
     return {
         types: ['REQUEST_DECK', 'RECEIVE_DECK'],
@@ -58,6 +67,12 @@ export function addDeck() {
 export function addDraftDeck() {
     return {
         type: 'ADD_DRAFT_DECK'
+    };
+}
+
+export function addChimeraDeck() {
+    return {
+        type: 'ADD_CHIMERA_DECK'
     };
 }
 
@@ -130,22 +145,22 @@ export function setFavourite(deck, value) {
 }
 
 function getDeckJson(deck) {
-    const deckData = {
+    const saveDeck = {
         deckName: deck.name,
         phoenixborn: formatCards(deck.phoenixborn),
         cards: formatCards(deck.cards),
         conjurations: formatCards(deck.conjurations),
         sideboard: formatCards(deck.sideboard || []),
         dicepool: deck.dicepool,
-        notes: deck.notes
+        notes: deck.notes,
+        mode: deck.mode,
+        listClass: deck.listClass
     };
-
-    // Include mode field if present (e.g., 'draft')
-    if (deck.mode) {
-        deckData.mode = deck.mode;
+    if (deck.ultimate) {
+        saveDeck.ultimate = formatCards(deck.ultimate);
+        saveDeck.behaviour = formatCards(deck.behaviour);
     }
-
-    return JSON.stringify(deckData);
+    return JSON.stringify(saveDeck);
 }
 
 export function saveDeck(deck) {
@@ -164,7 +179,8 @@ export function saveDeck(deck) {
 
 export function importDeck(deck) {
     let str = JSON.stringify({
-        uuid: deck.uuid
+        uuid: deck.uuid,
+        ashesDb: deck.ashesDb
     });
 
     return {
@@ -182,6 +198,7 @@ export function resyncDeck(deck) {
     let str = JSON.stringify({
         deckId: deck._id,
         uuid: deck.ashesLiveUuid,
+        ashesDb: deck.ashesDb,
         resync: true
     });
 
@@ -219,6 +236,18 @@ export function loadStandaloneDecks() {
     };
 }
 
+export function loadAllPreconsDecks() {
+    return {
+        types: ['LOAD_PRECON_DECKS', 'PRECON_DECKS_LOADED'],
+        shouldCallAPI: () => true,
+        APIParams: {
+            url: '/api/precon-decks',
+            type: 'GET'
+        }
+    };
+}
+
+
 export function loadAdventuringPartyDecks() {
     return {
         types: ['LOAD_ADVENTURINGPARTY_DECKS', 'ADVENTURINGPARTY_DECKS_LOADED'],
@@ -230,27 +259,6 @@ export function loadAdventuringPartyDecks() {
     };
 }
 
-export function loadBuildingBasicsDecks() {
-    return {
-        types: ['LOAD_BUILDINGBASICS_DECKS', 'BUILDINGBASICS_DECKS_LOADED'],
-        shouldCallAPI: () => true,
-        APIParams: {
-            url: '/api/buildingbasics-decks',
-            type: 'GET'
-        }
-    };
-}
-
-export function loadCorpseRebuildDecks() {
-    return {
-        types: ['LOAD_CORPSEREBUILD_DECKS', 'CORPSEREBUILD_DECKS_LOADED'],
-        shouldCallAPI: () => true,
-        APIParams: {
-            url: '/api/corpserebuild-decks',
-            type: 'GET'
-        }
-    };
-}
 export function loadFirstAdventureDecks() {
     return {
         types: ['LOAD_FIRSTADVENTURE_DECKS', 'FIRSTADVENTURE_DECKS_LOADED'],
@@ -284,17 +292,6 @@ export function loadChimeraDecks() {
     };
 }
 
-export function loadMSUDecks() {
-    return {
-        types: ['LOAD_MSU_DECKS', 'MSU_DECKS_LOADED'],
-        shouldCallAPI: () => true,
-        APIParams: {
-            url: '/api/msu-decks',
-            type: 'GET'
-        }
-    };
-}
-
 export function loadDualDuelDecks() {
     return {
         types: ['LOAD_DUALDUEL_DECKS', 'DUALDUEL_DECKS_LOADED'],
@@ -312,6 +309,17 @@ export function loadOneCollectionDecks() {
         shouldCallAPI: () => true,
         APIParams: {
             url: '/api/onecollection-decks',
+            type: 'GET'
+        }
+    };
+}
+
+export function loadAscendancyDecks() {
+    return {
+        types: ['LOAD_ASCENDANCY_DECKS', 'ASCENDANCY_DECKS_LOADED'],
+        shouldCallAPI: () => true,
+        APIParams: {
+            url: '/api/ascendancy-decks',
             type: 'GET'
         }
     };

@@ -19,6 +19,7 @@ const CardPile = ({
     disablePopup,
     hiddenTopCard,
     manualMode,
+    showAlphaSort,
     onCardClick,
     onCardAltClick,
     onDragDrop,
@@ -26,7 +27,6 @@ const CardPile = ({
     onMouseOut,
     onMouseOver,
     onPileClick,
-    onPopupChange,
     onTouchMove,
     orientation = 'vertical',
     player,
@@ -40,6 +40,7 @@ const CardPile = ({
     const [showPopup, setShowPopup] = useState(false);
     const [manualPopup, setManualPopup] = useState(false);
     const [popupSize, setPopupSize] = useState(size);
+
     const onPlusClick = () => {
         setPopupSize(sizeUp(popupSize));
     };
@@ -52,9 +53,8 @@ const CardPile = ({
         (value) => {
             setShowPopup(value);
 
-            onPopupChange && onPopupChange({ source: source, visible: value });
         },
-        [source, onPopupChange]
+        [source]
     );
 
     useEffect(() => {
@@ -121,6 +121,7 @@ const CardPile = ({
                     cards={cards}
                     disableMouseOver={disableMouseOver}
                     manualMode={manualMode}
+                    showAlphaSort={showAlphaSort}
                     onCardClick={(card) => {
                         // auto close
                         if (closeOnClick) {

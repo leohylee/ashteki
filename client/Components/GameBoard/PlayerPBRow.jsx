@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import CardPile from './CardPile';
 import SquishableCardPanel from './SquishableCardPanel';
 import Droppable from './Droppable';
@@ -15,6 +15,7 @@ const PlayerPBRow = ({
     discard,
     drawDeck,
     isMe,
+    leftMode,
     manualMode,
     numDeckCards,
     onCardClick,
@@ -28,7 +29,6 @@ const PlayerPBRow = ({
     side,
     spells,
     spectating,
-    onDrawPopupChange,
     onShuffleClick,
     onPileClick,
     showDeck,
@@ -47,6 +47,7 @@ const PlayerPBRow = ({
             return child;
         }
     };
+
 
     let cardPileProps = {
         manualMode: manualMode,
@@ -89,7 +90,6 @@ const PlayerPBRow = ({
             manualMode={manualMode}
             onCardAltClick={onCardAltClick}
             onPileClick={onPileClick}
-            onPopupChange={onDrawPopupChange}
             onShuffleClick={onShuffleClick}
             player={player}
             showDeck={showDeck}
@@ -104,26 +104,12 @@ const PlayerPBRow = ({
             title='Discard'
             source='discard'
             cards={discard}
+            showAlphaSort={true}
             {...cardPileProps}
         />
     );
 
-    let identityCard = <div className='card-placeholder' />;
-    if (phoenixborn) {
-        identityCard = (
-            <Card
-                card={phoenixborn}
-                onAltClick={onCardAltClick}
-                onMouseOver={onMouseOver}
-                onMouseOut={onMouseOut}
-                onMenuItemClick={onMenuItemClick}
-                onClick={onCardClick}
-                size={cardSize}
-                side={side}
-                source='play area'
-            />
-        );
-    }
+
     let opponentSrText = side === 'top' ? <span className='sr-only'>Opponent&apos;s</span> : null;
 
     const renderResources = (dice) => {
@@ -153,7 +139,18 @@ const PlayerPBRow = ({
             {showDice && renderResources(player.dice)}
             {renderDroppablePile('discard', discardToRender)}
             {showDeckPile && renderDroppablePile('deck', drawDeckToRender)}
-            {identityCard}
+            <Card
+                card={phoenixborn}
+                onAltClick={onCardAltClick}
+                onMouseOver={onMouseOver}
+                onMouseOut={onMouseOut}
+                onMenuItemClick={onMenuItemClick}
+                onClick={onCardClick}
+                onDieClick={onDieClick}
+                size={cardSize}
+                side={side}
+                source='play area'
+            />
             {renderDroppablePile('spellboard', spellboard)}
         </div>
     );

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
 import classNames from 'classnames';
 import 'jquery-migrate';
@@ -13,8 +13,10 @@ import SquishableCardPanel from './SquishableCardPanel';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBars, faLink } from '@fortawesome/free-solid-svg-icons';
-import Die from './Die';
 import './Card.scss';
+import DieUpgrades from './DieUpgrades';
+import { useLongPress } from 'ahooks';
+import { zoomCard } from '../../redux/actions';
 
 const Card = ({
     canDrag,
@@ -35,8 +37,24 @@ const Card = ({
     wrapped = true
 }) => {
     const sizeClass = {
-        [size]: size !== 'normal'
+        [size]: size
     };
+    const dispatch = useDispatch();
+
+    const pressRef = useRef(null);
+
+    useLongPress(() => {
+        dispatch(zoomCard(card, { sticky: true }));
+        pressRef.current.classList.add('long-press');
+        setTimeout(() => {
+            pressRef.current.classList.remove('long-press');
+        }, 150);
+    },
+        pressRef, {
+        delay: 200,
+        onClick: (event) => onCardClicked(event, card)
+    });
+
     const [showMenu, setShowMenu] = useState(false);
     const gameRound = useSelector((state) => state.lobby.currentGame?.round);
     const showAltIcon =
@@ -48,7 +66,8 @@ const Card = ({
     const manualMode = useSelector((state) => state.lobby.currentGame.manualMode);
 
     const [{ dragOffset, isDragging }, drag, preview] = useDrag({
-        item: { card: card, source: source, type: ItemTypes.CARD },
+        type: ItemTypes.CARD,
+        item: { card: card, source: source },
         canDrag: () => canDrag || (!card.unselectable && card.canPlay),
         collect: (monitor) => ({
             isDragging: monitor.isDragging(),
@@ -122,7 +141,7 @@ const Card = ({
             counters = counters.concat(getCountersForCard(upgrade));
         }
 
-        return counters.filter((counter) => counter.count > 0);
+        return counters.filter((counter) => counter.count > 0 && counter.name !== 'threat');
     };
 
     const getCardSizeMultiplier = () => {
@@ -363,44 +382,44 @@ const Card = ({
         let imageClass = classNames('card-image vertical', sizeClass, {
             exhausted: orientation === 'exhausted' || orientation === 'horizontal'
         });
-        const image = card ? (
-            <div className={imageClass}>
-                <CardImage card={card} />
-                {getChainIcon(card)}
-                {getBoostedFlags(card)}
-            </div>
-        ) : null;
-        let dice =
-            card.dieUpgrades && card.dieUpgrades.length > 0
-                ? card.dieUpgrades.map((d) => (
-                    <Die key={'dup-' + d.uuid} die={d} onClick={onDieClick} />
-                ))
-                : null;
+        const image = <div className={imageClass}>
+            <CardImage card={card} />
+            {getChainIcon(card)}
+            {getBoostedFlags(card)}
+        </div>
+            ;
 
         const mouseOverAllowed = !disableMouseOver
             && (!isFacedown() || !card.parent) && onMouseOver;
+
         return (
             <div className='card-frame' ref={drag}>
                 {getDragFrame(image)}
                 {getCardOrdering()}
                 <div
+                    ref={pressRef}
                     tabIndex={0}
                     className={cardClass}
                     onMouseOver={mouseOverAllowed ? () => onMouseOver(card) : undefined}
                     onMouseOut={!disableMouseOver && !isFacedown() ? onMouseOut : undefined}
-                    onClick={(event) => onCardClicked(event, card)}
+                // onClick={(event) => onCardClicked(event, card)}
+
                 >
                     {getMenuBox(card)}
 
                     <div>
-                        {card.name ?
-                            <span className='card-name'>{card.name}</span> :
+                        {card.name ? (
+                            <>
+                                <span className='card-name'>{card.name}&nbsp;</span>
+                                {card.target && <span className='sr-only'>{card.target} attack</span>}
+                            </>
+                        ) : (
                             <span className='sr-only'>{card.blood} blood</span>
-                        }
+                        )}
                         {image}
                     </div>
-                    {showCounters() && <CardCounters counters={getCountersForCard(card)} />}
-                    <div className='die-upgrades'>{dice}</div>
+                    {showCounters() && <CardCounters counters={getCountersForCard(card)} size={size} />}
+                    <DieUpgrades card={card} onDieClick={onDieClick} />
                 </div>
                 {shouldShowMenu() && (
                     <CardMenu

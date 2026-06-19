@@ -1,22 +1,28 @@
 import React from 'react';
 import { faComment, faCommentSlash, faCopy } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { toastr } from 'react-redux-toastr';
+import SpectatorIcon from './SpectatorIcon';
+import { useSelector } from 'react-redux';
+import { toast } from 'react-toastify';
 
 const ChatHeader = ({ muteSpectators, onMuteClick }) => {
+    const currentGame = useSelector((state) => state.lobby.currentGame);
     const writeChatToClipboard = (event) => {
         event.preventDefault();
         let messagePanel = document.getElementsByClassName('messages panel')[0];
         if (messagePanel) {
             navigator.clipboard
                 .writeText(messagePanel.innerText)
-                .then(() => toastr.success('Copied game chat to clipboard'))
-                .catch((err) => toastr.error(`Could not copy game chat: ${err}`));
+                .then(() => toast.success('Copied game chat to clipboard'))
+                .catch((err) => toast.error(`Could not copy game chat: ${err}`));
         }
     };
 
     return (
         <div className='chat-header'>
+            Round {currentGame.round}&nbsp;|&nbsp;
+            <SpectatorIcon />
+            &nbsp;
             <a
                 href='#'
                 className='pr-1 pl-1'
@@ -28,7 +34,7 @@ const ChatHeader = ({ muteSpectators, onMuteClick }) => {
                     icon={muteSpectators ? faCommentSlash : faComment}
                     onClick={onMuteClick}
                 ></FontAwesomeIcon>
-            </a>
+            </a>|&nbsp;
             <a
                 href='#'
                 className='pr-1 pl-1'

@@ -1,0 +1,323 @@
+[
+  {
+    "precon_id": 1101,
+    "name": "The Spark of Invention",
+    "format": null,
+    "phoenixborn": [
+      {
+        "id": "issa-brightmore",
+        "count": 1
+      }
+    ],
+    "dicepool": [
+      {
+        "magic": "artifice",
+        "count": 10
+      }
+    ],
+    "cards": [
+      {
+        "id": "barrier",
+        "count": 3
+      },
+      {
+        "id": "brilliant-display",
+        "count": 3
+      },
+      {
+        "id": "core-supplier",
+        "count": 3
+      },
+      {
+        "id": "recharge",
+        "count": 3
+      },
+      {
+        "id": "reconfigure",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "summon-spark-drone",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "summon-thunder-hulk",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "supercharge",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "systems-drafter",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "thunder-suit",
+        "count": 3
+      }
+    ],
+    "conjurations": [
+      {
+        "id": "spark-drone",
+        "count": 3
+      },
+      {
+        "id": "thunder-hulk",
+        "count": 2
+      }
+    ]
+  },
+  {
+    "precon_id": 1102,
+    "name": "The Sentinels of Skies",
+    "phoenixborn": [
+      {
+        "id": "arren-frostpeak",
+        "count": 1
+      }
+    ],
+    "dicepool": [
+      {
+        "magic": "astral",
+        "count": 10
+      }
+    ],
+    "cards": [
+      {
+        "id": "aerial-strike",
+        "count": 3
+      },
+      {
+        "id": "cirrus-ranger",
+        "count": 3
+      },
+      {
+        "id": "dodge",
+        "count": 3
+      },
+      {
+        "id": "gust-spear",
+        "count": 3
+      },
+      {
+        "id": "javelineer",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "retreat",
+        "count": 3
+      },
+      {
+        "id": "skybreak-captain",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "summon-frost-talon",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "summon-stellar-oracle",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "whirlwind",
+        "count": 3,
+        "ff": true
+      }
+    ],
+    "conjurations": [
+      {
+        "id": "frost-talon",
+        "count": 3
+      },
+      {
+        "id": "stellar-oracle",
+        "count": 2
+      }
+    ]
+  },
+  {
+    "precon_id": 1103,
+    "name": "The Garden of Brilliance",
+    "phoenixborn": [
+      {
+        "id": "maeve-luminvale",
+        "count": 1
+      }
+    ],
+    "dicepool": [
+      {
+        "magic": "artifice",
+        "count": 5
+      },
+      {
+        "magic": "natural",
+        "count": 5
+      }
+    ],
+    "cards": [
+      {
+        "id": "summon-snapseed",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "photovoltaics",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "botanist",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "overcharged-growth",
+        "count": 3
+      },
+      {
+        "id": "summon-capacitor-beetle",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "catalyst",
+        "count": 3
+      },
+      {
+        "id": "propagate",
+        "count": 3
+      },
+      {
+        "id": "encircle",
+        "count": 3
+      },
+      {
+        "id": "aspiring-growth",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "shock-gauntlet",
+        "count": 3
+      }
+    ],
+    "conjurations": [
+      {
+        "id": "snapseed",
+        "count": 4
+      },
+      {
+        "id": "snaptrap",
+        "count": 3
+      },
+      {
+        "id": "floral-tyrant",
+        "count": 2
+      },
+      {
+        "id": "nurtured",
+        "count": 2
+      },
+      {
+        "id": "capacitor-beetle",
+        "count": 2
+      }
+    ]
+  },
+  {
+    "precon_id": 1104,
+    "name": "The Shaper of Storms",
+    "phoenixborn": [
+      {
+        "id": "kanna-galeheart",
+        "count": 1
+      }
+    ],
+    "dicepool": [
+      {
+        "magic": "astral",
+        "count": 5
+      },
+      {
+        "magic": "natural",
+        "count": 5
+      }
+    ],
+    "cards": [
+      {
+        "id": "hurricane",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "tailwind",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "eagle-trainer",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "summon-galewind-hawk",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "summon-storm-spirit",
+        "count": 3,
+        "ff": true
+      },
+      {
+        "id": "stormchaser",
+        "count": 3
+      },
+      {
+        "id": "puncturing-wind",
+        "count": 3
+      },
+      {
+        "id": "freezing-rain",
+        "count": 3
+      },
+      {
+        "id": "searing-bolt",
+        "count": 3
+      },
+      {
+        "id": "gathering-clouds",
+        "count": 3
+      }
+    ],
+    "conjurations": [
+      {
+        "id": "galewind-hawk",
+        "count": 2
+      },
+      {
+        "id": "storm-spirit",
+        "count": 3
+      },
+      {
+        "id": "cloud-spirit",
+        "count": 4
+      },
+      {
+        "id": "eagle-fledgling",
+        "count": 3
+      }
+    ]
+  }
+]

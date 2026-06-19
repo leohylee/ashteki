@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faLink, faStarOfLife } from '@fortawesome/free-solid-svg-icons';
+import { faHand, faLink, faStarOfLife } from '@fortawesome/free-solid-svg-icons';
 import CardImage from '../GameBoard/CardImage';
 import classNames from 'classnames';
 
@@ -34,8 +34,8 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
         deckCards.forEach((card) => {
             let type = card.card.type;
 
-            if (type === 'character' || type === 'event') {
-                type = card.card.side + ` ${type}`;
+            if (card.card.blood) {
+                type = `${card.card.blood} Blood ${type}`;
             }
             if (!groupedCards[type]) {
                 groupedCards[type] = [card];
@@ -44,8 +44,24 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
             }
         });
 
-        for (let key in groupedCards) {
-            let cardList = groupedCards[key];
+        const keys = [
+            'Ready Spell',
+            'Ally',
+            'Alteration Spell',
+            'Action Spell',
+            'Reaction Spell',
+            'Conjuration',
+            '1 Blood Aspect',
+            '2 Blood Aspect',
+            'Conjured Alteration Spell',
+            'Conjured Aspect'
+        ];
+        for (let key of keys) {
+            if (!groupedCards[key] || groupedCards[key].length < 1) {
+                continue;
+            }
+            let cardList = groupedCards[key].sort((a, b) => a.id > b.id ? 1 : -1);
+
             let cards = [];
             let count = 0;
 
@@ -67,7 +83,8 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
                 }
                 const linkClasses = classNames('card-link', {
                     unique: card.phoenixborn,
-                    highlight: usesHighlightMagic(card)
+                    highlight: usesHighlightMagic(card),
+                    ff: card.ff
                 });
                 const countClass = card.count > 3 && !card.card?.type.includes('Conjur') ? 'invalidCount' : '';
 
@@ -131,7 +148,7 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
                 }
 
                 cards.push(
-                    <div key={'text-' + card.card.id}>
+                    <div className='card-list-text' key={'text-' + card.card.id}>
                         <span className={countClass}>{card.count + 'x '}</span>
                         <span
                             className={linkClasses}
@@ -161,7 +178,7 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
             });
 
             cardsToRender.push(
-                <div key={key} className='cards-no-break'>
+                <div className='cards-no-break' key={key}>
                     <div className='card-group-title'>{key + ' (' + count.toString() + ')'}</div>
                     <div className='deck-card-group'>
                         {cards}
@@ -177,11 +194,11 @@ const CardListText = ({ deckCards, highlight, onFFClick, isSideboard, isDraftMod
         <>
             {zoomCard && (
                 <div
-                    className='decklist-card-zoom'
+                    className='archon-zoom'
                     style={{ left: mousePos.x + 5 + 'px', top: mousePos.y + 'px' }}
                 >
                     <CardImage
-                        card={Object.assign({}, zoomCard, zoomCard.card, zoomCard.cardData)}
+                        card={Object.assign({}, zoomCard, zoomCard.card)}
                     />
                 </div>
             )}

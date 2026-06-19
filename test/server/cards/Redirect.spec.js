@@ -104,7 +104,7 @@ describe('Redirect reaction spell', function () {
     describe('vs Chimera behaviour damage', function () {
         beforeEach(function () {
             this.setupTest({
-                mode: 'solo',
+                mode: 'chimera',
                 player1: {
                     phoenixborn: 'aradel-summergaard',
                     inPlay: ['eternity-flame', 'blood-archer', 'shimmer-wing'],
@@ -130,8 +130,7 @@ describe('Redirect reaction spell', function () {
                     ultimate: 'viros-ultimate',
                     inPlay: ['hunting-instincts'],
                     deck: [],
-                    threatZone: ['regenerate'],
-                    dicepool: ['basic', 'basic', 'basic', 'basic', 'basic']
+                    threatZone: ['regenerate']
                 }
             });
 

@@ -1,4 +1,3 @@
-const _ = require('underscore');
 const monk = require('monk');
 
 const logger = require('../log.js');
@@ -46,7 +45,7 @@ class AshesCardService {
             .then((result) => {
                 let cards = {};
 
-                _.each(result, (card) => {
+                result.forEach((card) => {
                     if (options && options.shortForm) {
                         cards[card.stub] = {
                             _id: card._id,
@@ -60,7 +59,11 @@ class AshesCardService {
                             copies: card.copies,
                             deckType: card.deckType,
                             dice: card.dice,
-                            altDice: card.altDice
+                            altDice: card.altDice,
+                            behaviourCard: card.behaviorCard,
+                            ultimateCard: card.ultimateCard,
+                            blood: card.blood,
+                            restricted: card.restricted
                         };
                     } else {
                         cards[card.stub] = card;

@@ -1,29 +1,32 @@
 const uuid = require('uuid');
-const _ = require('underscore');
 const crypto = require('crypto');
 
 const GameChat = require('./game/gamechat.js');
 const logger = require('./log');
 const PendingPlayer = require('./models/PendingPlayer.js');
 const DummyUser = require('./models/DummyUser.js');
+const { GameTypes } = require('./constants.js');
 
 class PendingGame {
     constructor(owner, details) {
-        this.newGameType = details.newGameType;
-        this.solo = details.gameFormat === 'solo';
-        if (this.solo) {
+        this.newGameType = details.newGameType; // pvp, chimera, league
+        this.solo = [GameTypes.chimera, GameTypes.dragonborn, GameTypes.bot].includes(
+            details.newGameType
+        );
+        if (this.newGameType === 'chimera') {
             this.soloLevel = 'S';
             this.soloStage = '1';
         }
+        if (this.newGameType === 'dragonborn') {
+            this.addedThreat = '0';
+        }
+        this.gameFormat = details.gameFormat;
         this.allowSpectators = details.allowSpectators;
         this.saveReplay = details.saveReplay;
         this.createdAt = new Date();
         this.startedAt = null;
         this.finishedAt = null;
-        this.gameChat = new GameChat(this);
-        this.gameFormat = details.gameFormat;
         this.gamePrivate = !!details.gamePrivate; // hides from game list
-        // this.gameType = details.gameType;
         this.gameType = details.ranked ? 'competitive' : 'casual';
         this.id = uuid.v1();
         this.label = details.label;
@@ -44,6 +47,8 @@ class PendingGame {
         this.useGameTimeLimit = details.useGameTimeLimit;
         this.gameTimeLimit = details.gameTimeLimit;
         this.clockType = details.clockType;
+
+        this.gameChat = new GameChat(this);
     }
 
     // Getters
@@ -77,7 +82,7 @@ class PendingGame {
     }
 
     getSaveState() {
-        let players = _.map(this.getPlayers(), (player) => {
+        let players = Object.values(this.getPlayers()).map((player) => {
             return {
                 deck: player.deck.phoenixborn[0].card.name,
                 name: player.name,
@@ -150,11 +155,11 @@ class PendingGame {
     }
 
     isUserBlocked(user) {
-        return _.contains(this.owner.blockList, user.username.toLowerCase());
+        return Object.values(this.owner.blockList).includes(user.username.toLowerCase());
     }
 
     join(id, user, password) {
-        if (_.size(this.players) === 2 || this.started) {
+        if (Object.keys(this.players).length === 2 || this.started) {
             return 'Game full';
         }
 
@@ -261,7 +266,12 @@ class PendingGame {
     }
 
     removeDummy() {
-        delete this.players[DummyUser.DUMMY_USERNAME];
+        // do both in case...
+        if (this.newGameType === 'bot') {
+            delete this.players[DummyUser.BOT_USERNAME];
+        } else {
+            delete this.players[DummyUser.CHIMERA_USERNAME];
+        }
     }
 
     chat(playerName, message) {
@@ -293,7 +303,7 @@ class PendingGame {
 
     // interrogators
     isEmpty() {
-        return !_.any(this.getPlayersAndSpectators(), (player) =>
+        return !Object.values(this.getPlayersAndSpectators()).some((player) =>
             this.hasActivePlayer(player.name)
         );
     }
@@ -310,7 +320,9 @@ class PendingGame {
 
     removeAndResetOwner(playerName) {
         if (this.isOwner(playerName)) {
-            let otherPlayer = _.find(this.players, (player) => player.name !== playerName);
+            let otherPlayer = Object.values(this.players).find(
+                (player) => player.name !== playerName
+            );
 
             if (otherPlayer) {
                 this.owner = otherPlayer.user;
@@ -349,16 +361,18 @@ class PendingGame {
     // Summary
     getSummary(activePlayer) {
         let playerSummaries = {};
-        let playersInGame = _.filter(this.players, (player) => !player.left);
+        let playersInGame = Object.values(this.players).filter((player) => !player.left);
 
-        _.each(playersInGame, (player) => {
+        Object.values(playersInGame).forEach((player) => {
             let deck = {};
             if (player.deck) {
                 deck = {
                     selected: player.deck.selected,
                     status: player.deck.status,
                     name: null,
-                    isChimera: player.playerType === 'dummy',
+                    isChimera: player.isChimera,
+                    isDragonborn: player.isDragonborn,
+                    isBot: player.isBot,
                     stub: player.deck.listClass || player.deck.phoenixborn[0]?.card.stub || player.deck.phoenixborn[0]?.card.id,
                     pbStub:
                         player.deck.phoenixborn[0]?.card.imageStub ||
@@ -366,7 +380,8 @@ class PendingGame {
                 };
                 if (
                     activePlayer === player.name ||
-                    ['firstadventure', 'solo'].includes(this.gameFormat)
+                    this.solo ||
+                    ['firstadventure'].includes(this.gameFormat)
                 ) {
                     deck.name = player.deck.name;
                 }
@@ -454,6 +469,7 @@ class PendingGame {
             gamePrivate: this.gamePrivate,
             gameTimeLimit: this.gameTimeLimit,
             gameType: this.gameType,
+            newGameType: this.newGameType,
             id: this.id,
             label: this.label,
             muteSpectators: this.muteSpectators,
@@ -471,6 +487,7 @@ class PendingGame {
             solo: this.solo,
             soloLevel: this.soloLevel,
             soloStage: this.soloStage,
+            addedThreat: this.addedThreat,
             pairing: this.pairing,
             league: this.league
         };

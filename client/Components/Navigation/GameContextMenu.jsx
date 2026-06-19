@@ -2,8 +2,7 @@ import React from 'react';
 import { Nav } from 'react-bootstrap';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation, Trans } from 'react-i18next';
-import { toastr } from 'react-redux-toastr';
-import { sendGameMessage, closeGameSocket } from '../../redux/actions';
+import { sendGameMessage, closeGameSocket, clearGameReplay } from '../../redux/actions';
 import { useState } from 'react';
 
 import './GameContextMenu.scss';
@@ -47,37 +46,31 @@ const GameContextMenu = () => {
     };
 
     const onConcedeClick = () => {
-        toastr.confirm(t('Are you sure you want to concede this game?'), {
-            okText: t('Ok'),
-            cancelText: t('Cancel'),
-            onOk: () => {
-                dispatch(sendGameMessage('concede'));
-            }
-        });
+        if (confirm('Are you sure you want to concede this game?')) {
+            dispatch(sendGameMessage('concede'));
+        }
     };
 
     const onLeaveClick = () => {
+        if (currentGame.isReplay) {
+            dispatch(clearGameReplay());
+            return;
+        }
+
         if (!isSpectating && isGameActive()) {
-            toastr.confirm(
-                t(
+            if (
+                confirm(
                     'Your game is not finished. If you leave you will concede the game. Are you sure you want to leave?'
-                ),
-                {
-                    okText: t('Ok'),
-                    cancelText: t('Cancel'),
-                    onOk: () => {
-                        // dispatch(sendGameMessage('concede'));
-                        dispatch(sendGameMessage('leavegame'));
-                        dispatch(closeGameSocket());
-                    }
-                }
-            );
+                )
+            ) {
+                dispatch(sendGameMessage('leavegame'));
+            }
 
             return;
         }
 
         dispatch(sendGameMessage('leavegame'));
-        dispatch(closeGameSocket());
+        // dispatch(closeGameSocket());
     };
 
     if (!currentGame || !currentGame.started) {

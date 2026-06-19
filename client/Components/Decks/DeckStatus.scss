@@ -1,12 +1,13 @@
 @import '../../styles/variables';
 @import '../../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
 
 .deck-status {
     text-align: center;
     padding: 4px 8px;
-    border: 1px solid black;
+    // border: 1px solid black;
+    border-width: 1px;
     border-radius: 4px;
     color: black;
     display: inline-block;
@@ -16,20 +17,8 @@
         background: $success;
     }
 
-    &.casual-play {
-        background: $warning;
-    }
-
     &.used {
         background: $warning;
-    }
-
-    &.popular {
-        background: $warning;
-    }
-
-    &.notorious {
-        background: $danger;
     }
 
     &.conjurations {

@@ -1,4 +1,4 @@
-import { faLink, faLock } from '@fortawesome/free-solid-svg-icons';
+import { faLock } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import classNames from 'classnames';
 import React from 'react';
@@ -27,12 +27,13 @@ const DeckGrid = ({ decks, onDeckSelected, showWinRate }) => {
         <div className='deck-grid'>
             {decks.map((d, index) => {
                 const idClass = d.listClass || d.phoenixborn[0].id;
-                const hasChained = d.cards.some((c) => c.card.isChained);
+                // const hasChained = d.cards.some((c) => c.card.isChained);
                 const icon = null;
                 // hasChained ? (
                 //     <FontAwesomeIcon icon={faLink} title='This deck contains chained cards' />
                 // ) : null;
-                const dice = d.mode !== 'chimera' && <DeckDice deck={d} />;
+                const dice = d.mode !== 'chimera' && <DeckDice deck={d} slotCount={['chimera', 'dragonborn'].includes(d.mode) ? 5 : 10}
+                />;
                 const isSelected = selectedDeck === d;
                 const cardClasses = classNames('deckgrid-card', {
                     'selected-deck': isSelected

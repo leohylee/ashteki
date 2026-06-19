@@ -14,7 +14,7 @@ class DreamFracture extends Card {
                 targetsPlayer: true,
                 activePromptTitle: 'Choose a die to lower',
                 toSelect: 'die',
-                dieCondition: (die, context) => context.player.checkRestrictions('changeOpponentsDice') && !die.exhausted && die.level !== Level.Basic,
+                dieCondition: (die, context) => context.player.checkRestrictions('changeOpponentsDice'),
                 owner: 'opponent',
                 gameAction: ability.actions.lowerDie()
             },
@@ -30,8 +30,7 @@ class DreamFracture extends Card {
                 target: {
                     autoTarget: (context) => context.player.opponent.phoenixborn,
                     gameAction: ability.actions.dealDamage({
-                        amount: 1,
-                        showMessage: true
+                        amount: 1
                     })
                 }
             }

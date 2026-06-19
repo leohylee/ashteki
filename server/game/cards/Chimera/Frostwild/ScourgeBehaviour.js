@@ -112,7 +112,7 @@ class ScourgeBehaviour extends BehaviourCard {
                             },
                             () => {
                                 // Side: Aoe damage to all exhausted units and pb.
-                                this.doAoEDamage(1, true);
+                                this.aoEDamage(1, true);
                                 // Main: Reveal
                                 this.doReveal();
                             }
@@ -267,7 +267,7 @@ class ScourgeBehaviour extends BehaviourCard {
         this.game.resolveAbility(context);
     }
 
-    doAoEDamage(amount, includePb) {
+    aoEDamage(amount, includePb) {
         const ability = this.behaviour({
             cost: AbilityDsl.costs.sideAction(),
             target: {
@@ -280,7 +280,7 @@ class ScourgeBehaviour extends BehaviourCard {
                     return targets.filter((t) => t.exhausted);
                 },
                 gameAction: AbilityDsl.actions.orderedAoE({
-                    gameAction: AbilityDsl.actions.dealDamage({ amount: amount, showMessage: true })
+                    gameAction: AbilityDsl.actions.dealDamage({ amount: amount })
                 })
             }
         });
@@ -305,7 +305,6 @@ class ScourgeBehaviour extends BehaviourCard {
                 toSelect: 'die',
                 mode: 'exactly',
                 numDice: 2,
-                dieCondition: (die) => !die.exhausted && die.level !== Level.Basic,
                 owner: 'opponent',
                 gameAction: AbilityDsl.actions.lowerDie()
             },
@@ -315,8 +314,7 @@ class ScourgeBehaviour extends BehaviourCard {
                 target: {
                     autoTarget: (context) => context.player.opponent.phoenixborn,
                     gameAction: AbilityDsl.actions.dealDamage({
-                        amount: 1,
-                        showMessage: true
+                        amount: 1
                     })
                 }
             },

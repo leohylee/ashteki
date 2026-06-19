@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
-import { closeGameSocket, sendGameMessage } from '../../redux/actions';
+import { clearGameReplay, closeGameSocket, sendGameMessage } from '../../redux/actions';
 import Panel from '../Site/Panel';
 import CardImage from './CardImage';
 import cardsLogo from '../../assets/img/ShowHandIcon.png';
@@ -13,8 +13,13 @@ const WinLoseSplash = ({ game, onCloseClick }) => {
     const dispatch = useDispatch();
 
     const onLeaveClick = () => {
+        if (game.isReplay) {
+            dispatch(clearGameReplay());
+            return;
+        }
+
         dispatch(sendGameMessage('leavegame'));
-        dispatch(closeGameSocket());
+        // dispatch(closeGameSocket());
     };
 
     let loser = null;

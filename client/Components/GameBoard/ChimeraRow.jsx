@@ -101,29 +101,13 @@ const ChimeraRow = ({
         />
     );
 
-    // let drawDeckToRender = (
-    //     <DrawDeck
-    //         cardCount={numDeckCards}
-    //         cards={drawDeck}
-    //         isMe={isMe}
-    //         manualMode={manualMode}
-    //         onCardAltClick={onCardAltClick}
-    //         onPileClick={onPileClick}
-    //         onPopupChange={onDrawPopupChange}
-    //         onShuffleClick={onShuffleClick}
-    //         player={player}
-    //         showDeck={showDeck}
-    //         spectating={spectating}
-    //         {...cardPileProps}
-    //     />
-    // );
-
     let discardToRender = (
         <CardPile
             className='discard'
             title={t('Discard')}
             source='discard'
             cards={discard}
+            showAlphaSort={true}
             {...cardPileProps}
         />
     );

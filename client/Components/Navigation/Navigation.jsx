@@ -110,9 +110,14 @@ const Navigation = (props) => {
                             }
 
                             return (
-                                <Link key={menuItem.path} href={menuItem.path}>
-                                    <NavDropdown.Item>{t(menuItem.title)}</NavDropdown.Item>
-                                </Link>
+                                <NavDropdown.Item
+                                    key={menuItem.title || menuItem.path}
+                                    as={Link}
+                                    href={menuItem.path}
+                                    className='navbar-item interactable dropdown-child'
+                                >
+                                    {t(menuItem.title)}
+                                </NavDropdown.Item>
                             );
                         })}
                     </NavDropdown>
@@ -137,14 +142,13 @@ const Navigation = (props) => {
     };
 
     return (
-        <Navbar bg='dark' variant='dark' className='navbar-sm' fixed='top'>
+        <Navbar variant='dark' className='navbar-sm' fixed='top'>
             <Nav>
                 <NavbarBrand href='/'>Ashteki</NavbarBrand>
                 {renderMenuItems(LeftMenu)}
             </Nav>
             <Navbar.Collapse id='navbar' className='justify-content-end'>
                 <Nav className='ml-auto pr-md-6'>
-                    <GameContextMenu />
                     <GameCountMenu />
                     <LobbyUserCount />
                     {!currentGame && (

@@ -80,7 +80,7 @@ describe('Meteor', function () {
     describe('vs Chimera: on dice spent', function () {
         beforeEach(function () {
             this.setupTest({
-                mode: 'solo',
+                mode: 'chimera',
                 player1: {
                     phoenixborn: 'aradel-summergaard',
                     hand: ['mist-spirit', 'enchanted-violinist', 'rayward-recruit', 'meteor'],
@@ -102,8 +102,6 @@ describe('Meteor', function () {
                     ],
                     deck: ['rampage'],
                     threatZone: ['ballistic-seeds', 'regenerate'],
-
-                    dicepool: ['basic', 'basic', 'basic', 'basic', 'basic'],
                     archives: ['scarlet-seed']
                 }
             });

@@ -1,20 +1,35 @@
 import { faHeart, faPlus, faRandom } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React from 'react';
-import Link from '../Navigation/Link';
-import { Col, Form, Row } from 'react-bootstrap';
-import { useSelector } from 'react-redux';
+import { Button, Col, Form, Row } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+import { addChimeraDeck, addDeck } from '../../redux/actions';
 
-const DeckFilter = ({ onNameChange, onPbChange, handleFaveChange, showButtons }) => {
+const DeckFilter = ({ onNameChange, onPbChange, handleFaveChange, showButtons, mode, onPageSizeChange }) => {
     const allCards = useSelector((state) => state.cards.cards);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
     let phoenixbornCards = [];
+    const pbType = mode === 'chimera' ? 'Chimera' : 'Phoenixborn';
     for (let c in allCards) {
-        if (allCards[c].type == 'Phoenixborn') {
+        if (allCards[c].type == pbType && !allCards[c].restricted) {
             phoenixbornCards.push(allCards[c]);
         }
     }
     phoenixbornCards.sort((a, b) => (a.name < b.name ? -1 : 1));
 
+    const handleAddClick = () => {
+        if (mode === 'chimera') {
+            dispatch(addChimeraDeck());
+            navigate('/decks/add?chimera=true');
+        } else {
+            dispatch(addDeck());
+            navigate('/decks/add');
+        }
+    };
+
+    const allText = mode === 'chimera' ? 'All Chimera' : 'All Phoenixborn';
     return (
         <div>
             <Form onSubmit={(event) => event.preventDefault()}>
@@ -41,7 +56,7 @@ const DeckFilter = ({ onNameChange, onPbChange, handleFaveChange, showButtons })
                             placeholder={'Filter by PB'}
                         >
                             <option key='-1' value=''>
-                                All Phoenixborn
+                                {allText}
                             </option>
                             {phoenixbornCards.map((c, index) => {
                                 return (
@@ -52,6 +67,7 @@ const DeckFilter = ({ onNameChange, onPbChange, handleFaveChange, showButtons })
                             })}
                         </Form.Control>
                     </Form.Group>
+
                     <Form.Group as={Col} controlId='favourite' xs='1' className='fave-hdr'>
                         <FontAwesomeIcon icon={faHeart} title='Favourites' />
                         <Form.Check // prettier-ignore
@@ -61,17 +77,30 @@ const DeckFilter = ({ onNameChange, onPbChange, handleFaveChange, showButtons })
                         />
                     </Form.Group>
                     {showButtons && (
-                        <Form.Group as={Col} xs='3'>
-                            <Link className='btn btn-primary def' href='/decks/import'>
-                                <span className='phg-basic-magic'></span> Import
-                            </Link>
-                            <Link className='btn btn-info def' href='/decks/add-draft'>
-                                <FontAwesomeIcon icon={faRandom} /> Draft
-                            </Link>
-                            <Link className='btn btn-secondary def' href='/decks/add'>
-                                <FontAwesomeIcon icon={faPlus} /> New
-                            </Link>
-                        </Form.Group>
+                        <>
+                            <Form.Group as={Col} controlId='pageSize' xs='1' >
+                                <Form.Select onChange={(e) => onPageSizeChange && onPageSizeChange(e)}>
+                                    <option value='10'>10</option>
+                                    <option value='20'>20</option>
+                                    <option value='30'>30</option>
+                                </Form.Select>
+                            </Form.Group>
+                            <Form.Group as={Col} xs='3'>
+                                {mode !== 'chimera' && (
+                                    <Link className='btn btn-primary def' to='/decks/import'>
+                                        <span className='phg-basic-magic'></span> Import
+                                    </Link>
+                                )}
+                                {mode !== 'chimera' && (
+                                    <Link className='btn btn-info def' to='/decks/add-draft'>
+                                        <FontAwesomeIcon icon={faRandom} /> Draft
+                                    </Link>
+                                )}
+                                <Button className='btn btn-secondary def' onClick={handleAddClick}>
+                                    <FontAwesomeIcon icon={faPlus} /> New
+                                </Button>
+                            </Form.Group>
+                        </>
                     )}
                 </Row>
             </Form>

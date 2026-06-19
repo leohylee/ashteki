@@ -3,8 +3,8 @@
 import $ from 'jquery';
 import 'jquery-validation';
 import 'jquery-validation-unobtrusive';
-import 'react-redux-toastr/src/styles/index.scss';
 import 'core-js/stable';
+import 'core-js/features/array/group-by';
 import 'regenerator-runtime/runtime';
 import './styles/index.scss';
 
@@ -17,12 +17,9 @@ $.validator.setDefaults({
     }
 });
 
-let index;
-
-if (process.env.NODE_ENV === 'production') {
-    index = require('./index.prod');
+if (import.meta.env.PROD) {
+    import('./index.prod.jsx');
 } else {
-    index = require('./index.dev');
+    import('./index.dev.jsx');
 }
 
-export default index;

@@ -9,7 +9,7 @@ class SetupPhase extends Phase {
         super(game, 'setup');
         this.initialise([
             new SimpleStep(game, () => this.setupBegin()),
-            new SimpleStep(game, () => this.setupChimera()),
+            new SimpleStep(game, () => this.setupDummyPlayer()),
             new FirstFivePrompt(game),
             new SimpleStep(game, () => this.startGame())
         ]);
@@ -23,12 +23,15 @@ class SetupPhase extends Phase {
 
         for (const player of this.game.getPlayers()) {
             this.game.addMessage('{0} brings {1} to battle', player, player.phoenixborn);
-            if (player.isDummy) {
+            if (player.isChimera) {
                 this.game.addMessage(
                     'Chimera is at {0} level {1}',
                     this.game.soloLevel === 'H' ? 'Heroic' : 'Standard',
                     this.game.soloStage
                 );
+            }
+            if (player.isDragonborn) {
+                this.game.addMessage('Dragonborn is at {0} added Threat', this.game.addedThreat);
             }
         }
     }
@@ -39,15 +42,15 @@ class SetupPhase extends Phase {
         }
     }
 
-    setupChimera() {
-        if (this.game.solo) {
+    setupDummyPlayer() {
+        if (this.game.isChimera || this.game.isDragonborn) {
             const dummy = this.game.getDummyPlayer();
             dummy.setupAspects();
         }
     }
 
     startGame() {
-        _.each(this.game.getPlayers(), (player) => {
+        this.game.getPlayers().forEach((player) => {
             player.readyToStart = true;
             player.recordHand();
         });

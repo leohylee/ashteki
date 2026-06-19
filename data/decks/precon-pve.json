@@ -77,8 +77,7 @@
         "id": "calamity-golem",
         "count": 1
       }
-    ],
-    "notes": "This is the official second deck for [[Noah Redmoon]], available in the first Red Rains release, The Corpse of Viros. *Suggested First Five forthcoming.*"
+    ]
   },
   {
     "precon_id": 402,
@@ -158,8 +157,7 @@
         "id": "calamity-golem",
         "count": 1
       }
-    ],
-    "notes": "This is the official second deck for [[Jessa Na Ni]], available in the first Red Rains release, The Corpse of Viros. *Suggested First Five forthcoming.*"
+    ]
   },
   {
     "precon_id": 403,
@@ -239,8 +237,7 @@
         "id": "calamity-golem",
         "count": 1
       }
-    ],
-    "notes": "This is the official second deck for [[Coal Roarkwin]], available in the first Red Rains release, The Corpse of Viros. *Suggested First Five forthcoming.*"
+    ]
   },
   {
     "precon_id": 404,
@@ -320,8 +317,7 @@
         "id": "calamity-golem",
         "count": 1
       }
-    ],
-    "notes": "This is the official second deck for [[Brennen Blackcloud]], available in the first Red Rains release, The Corpse of Viros. *Suggested First Five forthcoming.*"
+    ]
   },
   {
     "precon_id": 405,
@@ -405,8 +401,7 @@
         "id": "ice-adaptation",
         "count": 2
       }
-    ],
-    "notes": "This is the official second deck for [[Aradel Summergaard]], available in the second Red Rains release, The Frostwild Scourge. *Suggested First Five forthcoming.*"
+    ]
   },
   {
     "precon_id": 406,
@@ -494,8 +489,7 @@
         "id": "pack-wolf",
         "count": 3
       }
-    ],
-    "notes": "This is the official second deck for [[Koji Wolfcub]], available in the second Red Rains release, The Frostwild Scourge. *Suggested First Five forthcoming.*"
+    ]
   },
   {
     "precon_id": 407,
@@ -583,8 +577,7 @@
         "id": "spark",
         "count": 3
       }
-    ],
-    "notes": "This is the official second deck for [[Lulu Firststone]], available in the second Red Rains release, The Frostwild Scourge. *Suggested First Five forthcoming.*"
+    ]
   },
   {
     "precon_id": 408,
@@ -672,8 +665,7 @@
         "id": "ice-buff",
         "count": 5
       }
-    ],
-    "notes": "This is the official second deck for [[Rin Northfell]], available in the second Red Rains release, The Frostwild Scourge. *Suggested First Five forthcoming.*"
+    ]
   },
   {
     "precon_id": 409,
@@ -1075,7 +1067,7 @@
       },
       {
         "id": "hand-of-shield",
-        "count": 1
+        "count": 3
       }
     ]
   },
@@ -1155,7 +1147,7 @@
       },
       {
         "id": "hand-of-shield",
-        "count": 1
+        "count": 3
       }
     ]
   },
@@ -1235,7 +1227,7 @@
       },
       {
         "id": "hand-of-shield",
-        "count": 1
+        "count": 3
       }
     ]
   },
@@ -1315,7 +1307,7 @@
       },
       {
         "id": "hand-of-shield",
-        "count": 1
+        "count": 3
       },
       {
         "id": "empyrean-mount",
@@ -1330,6 +1322,7 @@
   {
     "precon_id": 417,
     "name": "The Spawn of Shadowreck: Rimea",
+    "precon_set": "spawn",
     "phoenixborn": [
       {
         "id": "rimea-careworn",
@@ -1409,6 +1402,7 @@
   {
     "precon_id": 418,
     "name": "The Spawn of Shadowreck: Sembali",
+    "precon_set": "spawn",
     "phoenixborn": [
       {
         "id": "sembali-grimtongue",
@@ -1484,6 +1478,7 @@
   {
     "precon_id": 419,
     "name": "The Spawn of Shadowreck: Victoria",
+    "precon_set": "spawn",
     "phoenixborn": [
       {
         "id": "victoria-glassfire",
@@ -1559,6 +1554,7 @@
   {
     "precon_id": 420,
     "name": "The Spawn of Shadowreck: Hope",
+    "precon_set": "spawn",
     "phoenixborn": [
       {
         "id": "hope-everthorn",
@@ -1638,6 +1634,7 @@
   {
     "precon_id": 421,
     "name": "The Flood of Moon Cove: Echo",
+    "precon_set": "flood",
     "phoenixborn": [
       {
         "id": "echo-greystorm",
@@ -1713,6 +1710,7 @@
   {
     "precon_id": 422,
     "name": "The Flood of Moon Cove: Namine",
+    "precon_set": "flood",
     "phoenixborn": [
       {
         "id": "namine-hymntide",
@@ -1788,6 +1786,7 @@
   {
     "precon_id": 423,
     "name": "The Flood of Moon Cove: Harold",
+    "precon_set": "flood",
     "phoenixborn": [
       {
         "id": "harold-westraven",
@@ -1867,6 +1866,7 @@
   {
     "precon_id": 424,
     "name": "The Flood of Moon Cove: Fiona",
+    "precon_set": "flood",
     "phoenixborn": [
       {
         "id": "fiona-mercywind",
@@ -1954,7 +1954,7 @@
   {
     "precon_id": 425,
     "name": "The End of Argaia: Jericho",
-    "restricted": true,
+    "precon_set": "argaia",
     "phoenixborn": [
       {
         "id": "jericho-reborn",
@@ -2029,7 +2029,7 @@
   {
     "precon_id": 426,
     "name": "The End of Argaia: Tristan",
-    "restricted": true,
+    "precon_set": "argaia",
     "phoenixborn": [
       {
         "id": "tristan-darkwater",
@@ -2108,7 +2108,7 @@
   {
     "precon_id": 427,
     "name": "The End of Argaia: Orrick",
-    "restricted": true,
+    "precon_set": "argaia",
     "phoenixborn": [
       {
         "id": "orrick-gilstream",
@@ -2183,7 +2183,7 @@
   {
     "precon_id": 428,
     "name": "The End of Argaia: Rowan",
-    "restricted": true,
+    "precon_set": "argaia",
     "phoenixborn": [
       {
         "id": "rowan-umberend",

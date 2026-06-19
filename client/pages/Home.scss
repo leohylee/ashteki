@@ -1,11 +1,9 @@
 @import '../styles/colours';
-@import '~bootstrap/scss/functions';
-@import '~bootstrap/scss/variables';
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
 
 
 .textlogo {
-    // background-color: #7289DA;
-    background-color: rgba(0, 0, 0, 0.5);
     height: 60px;
     border-radius: 5px;
 }

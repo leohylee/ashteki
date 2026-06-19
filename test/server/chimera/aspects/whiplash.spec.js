@@ -4,7 +4,7 @@ describe('Whiplash Aspect', function () {
     describe('On Reveal', function () {
         beforeEach(function () {
             this.setupTest({
-                mode: 'solo',
+                mode: 'chimera',
                 player1: {
                     phoenixborn: 'coal-roarkwin',
                     inPlay: ['false-demon', 'anchornaut', 'iron-worker', 'flute-mage'],
@@ -61,7 +61,7 @@ describe('Whiplash Aspect', function () {
     describe('Vs Snapper', function () {
         beforeEach(function () {
             this.setupTest({
-                mode: 'solo',
+                mode: 'chimera',
                 player1: {
                     phoenixborn: 'coal-roarkwin',
                     inPlay: ['seafoam-snapper', 'anchornaut', 'iron-worker', 'flute-mage'],
@@ -103,7 +103,7 @@ describe('Whiplash Aspect', function () {
     describe('Vs Sacred Ground', function () {
         beforeEach(function () {
             this.setupTest({
-                mode: 'solo',
+                mode: 'chimera',
                 player1: {
                     phoenixborn: 'coal-roarkwin',
                     inPlay: ['false-demon', 'anchornaut', 'iron-worker', 'flute-mage'],
@@ -127,10 +127,11 @@ describe('Whiplash Aspect', function () {
             spyOn(Dice, 'd12Roll').and.returnValue(1);
         });
 
-        it('damage leftmost removes snapper status tokens', function () {
-            this.player1.play(this.safeguard);
-            this.player1.clickDie(0);
-            this.player1.clickCard(this.falseDemon);
+        it('damage prevented due to armor 1', function () {
+            this.player1.clickCard(this.sacredGround);
+            this.player1.clickPrompt('Sacred Ground');
+            // this.player1.clickDie(0);
+            // this.player1.clickCard(this.falseDemon);
 
             expect(this.whiplash.facedown).toBe(true);
             this.player1.endTurn();

@@ -1,4 +1,4 @@
-const { CardType, DamageDealingLocations, BattlefieldTypes } = require('../../constants');
+const { CardType, DamageDealingLocations, BattlefieldTypes, PhoenixbornTypes } = require('../../constants');
 const CardGameAction = require('./CardGameAction');
 
 class DealDamageAction extends CardGameAction {
@@ -9,14 +9,12 @@ class DealDamageAction extends CardGameAction {
         this.sourceType = '';
         this.damageType = 'card effect';
         this.purge = false;
-        this.ignoreArmor = false;
         this.bonus = false;
-        this.showMessage = false;
         this.unpreventable = false;
     }
 
     setup() {
-        this.targetType = [...BattlefieldTypes, 'Phoenixborn', 'Chimera'];
+        this.targetType = [...BattlefieldTypes, ...PhoenixbornTypes];
         this.name = 'damage';
         this.effectMsg = 'deal ' + (this.amount ? this.amount + ' ' : '') + 'damage to {0}';
     }
@@ -34,11 +32,11 @@ class DealDamageAction extends CardGameAction {
             card: card,
             context: context,
             amount: amount,
+            amountDealt: amount,
             damageSource: this.damageSource || context.source,
             damageType: this.damageType,
             destroyEvent: null,
             fightEvent: this.fightEvent,
-            ignoreArmor: this.ignoreArmor,
             bonus: this.bonus,
             sourceType: this.sourceType,
             multiEvent: this.multiEvent
@@ -51,37 +49,7 @@ class DealDamageAction extends CardGameAction {
         // add unpreventable flags and restrictions
         params.preventable =
             params.preventable &&
-            !(this.unpreventable || params.damageSource.anyEffect('unpreventable'));
-
-        if (params.preventable) {
-            if (card.anyEffect('preventAllDamage', context)) {
-                let preventer = card.getEffects('preventAllDamage')[0];
-                context.game.addMessage('{0} prevents damage to {1}', preventer, card);
-
-                // add preventer and card as params when this matters
-                return context.game.getEvent('onDamagePrevented');
-            }
-
-            if (card.anyEffect('preventDamage')) {
-                let preventAmount = card.sumEffects('preventDamage');
-                params.amount = params.amount - preventAmount;
-            } else if (card.anyEffect('preventNonAttackDamage') && !this.fightEvent) {
-                let preventAmount = card.sumEffects('preventNonAttackDamage');
-                params.amount = params.amount - preventAmount;
-            }
-
-            if (card.anyEffect('limitDamageReceived')) {
-                const effects = card.getEffects('limitDamageReceived');
-                params.amount = Math.min(params.amount, ...effects);
-            }
-        }
-
-        let armorPrevented = 0
-        // Armour and Unpreventable damage (e.g. fallen)
-        if (params.preventable && !params.ignoreArmor) {
-            armorPrevented = amount <= card.armor ? amount : card.armor;
-            params.amount -= armorPrevented;
-        }
+            !(this.unpreventable || params.damageSource.anyEffect('unpreventable', context));
 
         params.condition = (event) => this.canDealDamage(event.damageSource, event);
 
@@ -112,31 +80,11 @@ class DealDamageAction extends CardGameAction {
                     tokenEvent.openReactionWindow = true;
                     event.addSubEvent(tokenEvent);
 
-                    if (this.showMessage) {
-                        context.game.addMessage('{0} takes {1} damage', event.card, event.amount);
-                    }
+                    context.game.addMessage('{0} receives {1} damage', event.card, event.amount);
                 }
             );
 
-            let armorEvent;
-            let armorParams = {
-                card: damageDealtEvent.card,
-                context: damageDealtEvent.context,
-                armorPrevented: armorPrevented,
-                noGameStateCheck: true
-            };
-
-            if (!armorPrevented) {
-                armorEvent = super.createEvent('unnamedEvent', armorParams, (event) => {
-                    event.addSubEvent(damageAppliedEvent);
-                });
-            } else {
-                armorEvent = super.createEvent('onDamagePreventedByArmor', armorParams, (event) => {
-                    event.addSubEvent(damageAppliedEvent);
-                });
-            }
-
-            damageDealtEvent.addSubEvent(armorEvent);
+            damageDealtEvent.addSubEvent(damageAppliedEvent);
         });
     }
 

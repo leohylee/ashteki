@@ -17,7 +17,7 @@ const InGameSettings = ({ formProps }) => {
             <Form.Check
                 id='confirmOneClick'
                 name='gameOptions.confirmOneClick'
-                label='Show a prompt when initating 1-click abilities'
+                label='Show a prompt when initiating 1-click abilities'
                 type='switch'
                 checked={formProps.values.gameOptions.confirmOneClick}
                 onChange={formProps.handleChange}
@@ -56,6 +56,15 @@ const InGameSettings = ({ formProps }) => {
                 label="Don't alert on attacks (useful for blitz games)"
                 type='switch'
                 checked={formProps.values.gameOptions.noAttackAlerts}
+                onChange={formProps.handleChange}
+                onBlur={formProps.handleBlur}
+            />
+            <Form.Check
+                id='noCardZoom'
+                name='gameOptions.noCardZoom'
+                label="Don't zoom cards on hover (long press to zoom)"
+                type='switch'
+                checked={formProps.values.gameOptions.noCardZoom}
                 onChange={formProps.handleChange}
                 onBlur={formProps.handleBlur}
             />

@@ -1,348 +1,194 @@
-import React from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useEffect, useRef } from 'react';
 import _ from 'underscore';
-import { connect } from 'react-redux';
+import $ from 'jquery';
+import { useSelector, useDispatch } from 'react-redux';
 import { Form, Col, Row, Button, Modal } from 'react-bootstrap';
 import { Typeahead } from 'react-bootstrap-typeahead';
 import TextArea from '../Form/TextArea.jsx';
 import DraftCardPicker from './DraftCardPicker.jsx';
-import * as actions from '../../redux/actions';
+import { updateDeck } from '../../redux/actions';
+import { useNavigate } from 'react-router-dom';
+import './DeckEditor.scss';
 
-class InnerDeckEditor extends React.Component {
-    constructor(props) {
-        super(props);
+function DeckEditor({ deck, onDeckSave, isChimera, mode }) {
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const typeaheadRef = useRef(null);
+    // Tracks the last deck object we dispatched ourselves so the external-sync
+    // effect can tell our own updates apart from external ones (e.g. sideboard swaps).
+    const selfUpdateRef = useRef(null);
 
-        this.state = {
-            cardList: '',
-            diceList: '',
-            sideboardList: '',
-            notes: '',
-            deck: this.copyDeck(props.deck),
-            numberToAdd: 1,
-            cardToAdd: null,
-            sideboardReadonly: true,
-            validation: {
-                deckname: '',
-                cardToAdd: ''
-            },
-            // Draft mode state grouped together
-            draftState: {
-                showDraftPicker: false,
-                showSideboardPicker: false,
-                draftCardOptions: [],
-                refreshesRemaining: 3,
-                lockedCardIndices: [],
-                sideboardPicksRemaining: 3,
-                pickedCardStubs: []
-            },
-            showConfirmationModal: false
-        };
+    const cards = useSelector((state) => state.cards.cards);
+    // const deck = useSelector((state) => state.cards.selectedDeck);
+    const loading = useSelector((state) => state.api.loading);
+    const user = useSelector((state) => state.account.user);
+    const checkRestriction = (card) => {
+        return !card.restricted || user.permissions?.playtester;
+    };
+
+    const [cardList, setCardList] = useState('');
+    const [diceList, setDiceList] = useState('');
+    const [sideboardList, setSideboardList] = useState('');
+    const [deckState, setDeckState] = useState(copyDeck(deck));
+    const [numberToAdd, setNumberToAdd] = useState(1);
+    const [cardToAdd, setCardToAdd] = useState(null);
+    const [pbid, setPbid] = useState('');
+    const [sideboardReadonly, setSideboardReadonly] = useState(true);
+    const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+    // Draft mode state grouped together
+    const [draftState, setDraftState] = useState({
+        showDraftPicker: false,
+        showSideboardPicker: false,
+        draftCardOptions: [],
+        refreshesRemaining: 3,
+        lockedCardIndices: [],
+        sideboardPicksRemaining: 3,
+        pickedCardStubs: []
+    });
+
+    function updateDraftState(updates) {
+        setDraftState((prev) => ({ ...prev, ...updates }));
     }
 
-    // Helper method to update draft state
-    updateDraftState(updates) {
-        this.setState({
-            draftState: {
-                ...this.state.draftState,
-                ...updates
-            }
-        });
+    // Dispatch a deck update to redux and remember the reference so the external-sync
+    // effect won't clobber the editor's textareas in response to our own change.
+    function dispatchDeck(d) {
+        selfUpdateRef.current = d;
+        dispatch(updateDeck(d));
     }
 
-    handleCancelClick() {
-        this.props.navigate('/decks');
-
-        return;
-    }
-
-    componentDidMount() {
-        let cardList = '';
-        if (this.props.deck && (this.props.deck.cards || this.props.deck.conjurations)) {
-            this.pbid =
-                this.props.deck.phoenixborn.length > 0 ? this.props.deck.phoenixborn[0].id : '';
-
-            _.each(this.props.deck.cards, (card) => {
-                cardList += this.getCardListEntry(card.count, card.card, card.ff);
-            });
-
-            // _.each(this.props.deck.conjurations, (card) => {
-            //     cardList += this.getCardListEntry(card.count, card.card);
-            // });
-
-            this.setState({ cardList: cardList });
-        }
-
-        let diceList = '';
-        if (this.props.deck && this.props.deck.dicepool) {
-            _.each(this.props.deck.dicepool, (diceCount) => {
-                diceList += this.getDiceListEntry(diceCount);
-            });
-
-            this.setState({ diceList: diceList });
-        }
-
-        let sideboardList = '';
-        if (this.props.deck && this.props.deck.sideboard) {
-            _.each(this.props.deck.sideboard, (card) => {
-                sideboardList += this.getCardListEntry(card.count, card.card);
-            });
-
-            this.setState({ sideboardList: sideboardList });
-        }
-    }
-
-    componentDidUpdate(prevProps) {
-        // Update text areas when deck changes from external sources (like swap action)
-        // Only update cardList and sideboardList which are read-only in draft mode
-        // Don't update diceList as it should always be editable
-        // Don't update sideboardList if in draft mode and sideboard is unlocked (user is editing)
-        if (this.props.deck && prevProps.deck !== this.props.deck) {
-            let cardList = '';
-            if (this.props.deck.cards) {
-                _.each(this.props.deck.cards, (card) => {
-                    cardList += this.getCardListEntry(card.count, card.card, card.ff);
-                });
-            }
-
-            let sideboardList = '';
-            if (this.props.deck.sideboard) {
-                _.each(this.props.deck.sideboard, (card) => {
-                    sideboardList += this.getCardListEntry(card.count, card.card);
-                });
-            }
-
-            // Only update sideboardList if not actively being edited
-            const shouldUpdateSideboard = !(this.state.deck.mode === 'draft' && !this.state.sideboardReadonly);
-
-            this.setState({
-                cardList: cardList,
-                sideboardList: shouldUpdateSideboard ? sideboardList : this.state.sideboardList,
-                deck: this.copyDeck(this.props.deck)
-            });
-        }
-    }
-
-    // XXX One could argue this is a bit hacky, because we're updating the innards of the deck object, react doesn't update components that use it unless we change the reference itself
-    copyDeck(deck) {
-        if (!deck) {
+    function copyDeck(deckToCopy) {
+        if (!deckToCopy) {
             return {
                 name: 'New Deck',
                 phoenixborn: [],
+                cards: [],
+                conjurations: [],
+                notes: '',
+                dicepool: [],
                 sideboard: []
             };
         }
 
         return {
-            _id: deck._id,
-            name: deck.name,
-            phoenixborn: deck.phoenixborn,
-            cards: deck.cards,
-            conjurations: deck.conjurations,
-            status: deck.status,
-            notes: deck.notes,
-            dicepool: deck.dicepool,
-            mode: deck.mode,
-            sideboard: deck.sideboard || []
+            _id: deckToCopy._id,
+            name: deckToCopy.name,
+            phoenixborn: deckToCopy.phoenixborn,
+            ultimate: deckToCopy.ultimate,
+            behaviour: deckToCopy.behaviour,
+            cards: deckToCopy.cards,
+            conjurations: deckToCopy.conjurations,
+            status: deckToCopy.status,
+            notes: deckToCopy.notes,
+            dicepool: deckToCopy.dicepool,
+            mode: deckToCopy.mode,
+            sideboard: deckToCopy.sideboard || [],
+            sideboardConjurations: deckToCopy.sideboardConjurations || []
         };
     }
 
-    onChange(field, event) {
-        let deck = this.copyDeck(this.state.deck);
-
-        deck[field] = event.target.value;
-
-        this.setState({ deck: deck });
-        this.props.updateDeck(deck);
+    function getCardListEntry(count, card, ff) {
+        const fFive = ff ? ' ff' : '';
+        return count + ' ' + card.name + fFive + '\n';
     }
 
-    onPbChange(event) {
-        let deck = this.copyDeck(this.state.deck);
-        let pb = this.props.cards[event.target.value];
-
-        if (deck.phoenixborn.length == 0) {
-            deck.phoenixborn.push(pb);
-        } else deck.phoenixborn[0] = pb;
-        this.pbid = pb.id;
-
-        this.rebuildConjurations(deck);
-        this.setState({ deck: deck });
-        this.props.updateDeck(deck);
+    function getDiceListEntry(diceCount) {
+        return diceCount.count + ' ' + diceCount.magic + '\n';
     }
 
-    onNumberToAddChange(event) {
-        this.setState({ numberToAdd: event.target.value });
-    }
-
-    addCardChange(selectedCards) {
-        this.setState({ cardToAdd: selectedCards[0] });
-    }
-
-    onAddCard(event) {
-        event.preventDefault();
-
-        if (
-            !this.state.cardToAdd ||
-            !this.state.cardToAdd.name ||
-            this.state.cardToAdd.type == 'Phoenixborn'
-        ) {
-            return;
-        }
-
-        let deck = this.state.deck;
-        this.addCard(this.state.cardToAdd, parseInt(this.state.numberToAdd), deck);
-
-        let cardList = this.state.cardList;
-        cardList += this.getCardListEntry(this.state.numberToAdd, this.state.cardToAdd);
-        this.setState({ cardList: cardList });
-
-        deck = this.copyDeck(deck);
-
-        this.props.updateDeck(deck);
-    }
-
-    onCardListChange(event) {
-        event.preventDefault();
-
-        let deck = this.state.deck;
-        let split = event.target.value.split('\n');
-
-        deck.cards = [];
-        deck.conjurations = [];
-
-        _.each(split, (line) => {
-            line = line.trim();
-
-            if (!line[0] || isNaN(line[0])) {
-                return;
-            }
-
-            let index = 0;
-            while (!isNaN(line[index]) || line[index] === 'x') {
-                index++;
-            }
-            let num = parseInt(line.substr(0, index));
-            let cardName = line.substr(index, line.length).trim();
-            let isFirstFive = false;
-            if (cardName.endsWith(' ff')) {
-                isFirstFive = true;
-                cardName = cardName.substr(0, cardName.length - 3);
-            }
-
-            let card = this.getCard(cardName);
-
-            if (card) {
-                const isConjuration = card.type === 'Conjuration' || card.type === 'Conjured Alteration Spell';
-                if (!isConjuration) {
-                    this.addCard(card, num, deck, isFirstFive);
+    function addConjurations(card, deckToUpdate) {
+        if (card.conjurations) {
+            card.conjurations.forEach((conj) => {
+                if (!deckToUpdate.conjurations.some((c) => c.id === conj.stub)) {
+                    var c = getCard(conj.name);
+                    if (c) {
+                        addCard(c, c.copies, deckToUpdate);
+                    }
                 }
-            }
-        });
-
-        this.addConjurations(deck.phoenixborn[0].card, deck);
-        deck = this.copyDeck(deck);
-
-        this.setState({ cardList: event.target.value, deck: deck });
-        this.props.updateDeck(deck);
-    }
-
-    getCard(cardName) {
-        return this.getAllCards().find(
-            (card) => card.name.toLowerCase() === cardName.toLowerCase()
-        );
-    }
-
-    getAllCards() {
-        return _.toArray(this.props.cards).filter((card) => card.deckType !== 'chimera');
-    }
-
-    onDiceListChange(event) {
-        event.preventDefault();
-
-        let deck = this.state.deck;
-        let split = event.target.value.split('\n');
-
-        deck.dicepool = [];
-
-        _.each(split, (line) => {
-            line = line.trim();
-
-            if (!line[0] || isNaN(line[0])) {
-                return;
-            }
-
-            let index = 0;
-            while (!isNaN(line[index]) || line[index] === 'x') {
-                index++;
-            }
-            let num = parseInt(line.substr(0, index));
-            let magic = this.parseMagic(line.substr(index, line.length).toLowerCase());
-            if (magic == '') return;
-            deck.dicepool.push({ magic: magic.toLowerCase(), count: num });
-        });
-
-        deck = this.copyDeck(deck);
-
-        this.setState({ diceList: event.target.value, deck: deck });
-        this.props.updateDeck(deck);
-    }
-
-    onSideboardListChange(event) {
-        event.preventDefault();
-
-        let deck = this.state.deck;
-        let split = event.target.value.split('\n');
-
-        deck.sideboard = [];
-
-        _.each(split, (line) => {
-            line = line.trim();
-
-            if (!line[0] || isNaN(line[0])) {
-                return;
-            }
-
-            let index = 0;
-            while (!isNaN(line[index]) || line[index] === 'x') {
-                index++;
-            }
-            let num = parseInt(line.substr(0, index));
-            let cardName = line.substr(index, line.length).trim();
-
-            let card = this.getCard(cardName);
-
-            if (card) {
-                deck.sideboard.push({
-                    count: num,
-                    card: card,
-                    id: card.stub
-                });
-            }
-        });
-
-        // Rebuild conjurations from phoenixborn and main deck
-        deck.conjurations = [];
-        if (deck.phoenixborn && deck.phoenixborn.length > 0) {
-            this.addConjurations(deck.phoenixborn[0].card, deck);
+            });
         }
-        if (deck.cards) {
-            deck.cards.forEach((c) => this.addConjurations(c.card, deck));
+    }
+
+    function rebuildConjurations(deckToUpdate) {
+        deckToUpdate.conjurations = [];
+
+        addConjurations(deckToUpdate.phoenixborn[0], deckToUpdate);
+        deckToUpdate.cards.forEach((c) => addConjurations(c, deckToUpdate));
+    }
+
+    function rebuildBehaviourAndUltimate(deckToUpdate) {
+        deckToUpdate.behaviour = [];
+        deckToUpdate.ultimate = [];
+
+        addBehaviour(deckToUpdate.phoenixborn[0], deckToUpdate);
+        addUltimate(deckToUpdate.phoenixborn[0], deckToUpdate);
+    }
+
+    function addBehaviour(card, deckToUpdate) {
+        if (card.behaviourCard) {
+            var c = getCard(card.behaviourCard);
+            if (c) {
+                addCard(c, c.copies, deckToUpdate);
+            }
+        }
+    }
+
+    function addUltimate(card, deckToUpdate) {
+        if (card.ultimateCard) {
+            var c = getCard(card.ultimateCard);
+            if (c) {
+                addCard(c, c.copies, deckToUpdate);
+            }
+        }
+    }
+
+    function addCard(card, number, deckToUpdate, isFirstFive) {
+        let phoenixborn = deckToUpdate.phoenixborn;
+        let conjurations = deckToUpdate.conjurations;
+        let cardsList = deckToUpdate.cards;
+        let behaviours = deckToUpdate.behaviour;
+        let ultimates = deckToUpdate.ultimate;
+
+        let list;
+
+        if (['Conjuration', 'Conjured Alteration Spell', 'Conjured Aspect'].includes(card.type)) {
+            list = conjurations;
+        } else if (['Phoenixborn', 'Chimera'].includes(card.type)) {
+            list = phoenixborn;
+        } else if (card.type === 'Behaviour') {
+            list = behaviours;
+        } else if (card.stub.includes('ultimate')) {
+            list = ultimates;
+        } else {
+            list = cardsList;
         }
 
-        // Build sideboard conjurations separately
-        const tempDeckForSideboard = { conjurations: [] };
-        deck.sideboard.forEach((c) => this.addConjurations(c.card, tempDeckForSideboard));
-        deck.sideboardConjurations = tempDeckForSideboard.conjurations;
-
-        deck = this.copyDeck(deck);
-
-        this.setState({ sideboardList: event.target.value, deck: deck });
-        this.props.updateDeck(deck);
+        const entry = list.find((c) => c.id === card.stub);
+        if (entry) {
+            entry.count += number;
+        } else {
+            list.push({
+                count: number,
+                card: card,
+                id: card.stub,
+                conjurations: card.conjurations,
+                ff: isFirstFive
+            });
+        }
+        addConjurations(card, deckToUpdate);
     }
 
-    parseMagic(input) {
+    function parseMagic(input) {
         let mgc = '';
-        // do translations / synonyms
         switch (input) {
+            case 'artifice':
+            case 'art':
+                mgc = 'artifice';
+                break;
+            case 'astral':
+            case 'ast':
+                mgc = 'astral';
+                break;
             case 'nature':
             case 'nat':
             case 'natural':
@@ -372,8 +218,13 @@ class InnerDeckEditor extends React.Component {
             case 'time':
                 mgc = 'time';
                 break;
+            case 'rage':
+                mgc = 'rage';
+                break;
         }
         let validMagics = [
+            'artifice',
+            'astral',
             'charm',
             'ceremonial',
             'illusion',
@@ -382,81 +233,313 @@ class InnerDeckEditor extends React.Component {
             'sympathy',
             'time'
         ];
+        if (isChimera) {
+            validMagics.push('rage');
+        }
         let isValid = validMagics.includes(mgc);
         return isValid ? mgc : '';
     }
 
-    addCard(card, number, deck, isFirstFive) {
-        let phoenixborn = deck.phoenixborn;
-        let conjurations = deck.conjurations;
-        let cards = deck.cards;
+    useEffect(() => {
+        let newCardList = '';
+        if (deck && (deck.cards || deck.conjurations)) {
+            const newPbid = deck.phoenixborn.length > 0 ? deck.phoenixborn[0].id : '';
+            setPbid(newPbid);
 
-        let list;
-
-        if (card.type === 'Conjuration' || card.type === 'Conjured Alteration Spell') {
-            list = conjurations;
-        } else if (card.type === 'Phoenixborn') {
-            list = phoenixborn;
-        } else {
-            list = cards;
-        }
-
-        const entry = list.find(c => c.id === card.stub);
-        if (entry) {
-            entry.count += number;
-        } else {
-            list.push({
-                count: number,
-                card: card,
-                id: card.stub,
-                conjurations: card.conjurations,
-                ff: isFirstFive
+            _.each(deck.cards, (card) => {
+                newCardList += getCardListEntry(card.count, card.card, card.ff);
             });
-        }
-        this.addConjurations(card, deck);
-    }
 
-    addConjurations(card, deck) {
-        if (card.conjurations) {
-            card.conjurations.forEach((conj) => {
-                if (!deck.conjurations.some((c) => c.id === conj.stub)) {
-                    var c = this.getCard(conj.name);
-                    if (c) {
-                        this.addCard(c, c.copies, deck);
-                    }
-                }
+            setCardList(newCardList);
+        }
+
+        let newDiceList = '';
+        if (deck && deck.dicepool) {
+            _.each(deck.dicepool, (diceCount) => {
+                newDiceList += getDiceListEntry(diceCount);
             });
+
+            setDiceList(newDiceList);
+        }
+
+        let newSideboardList = '';
+        if (deck && deck.sideboard) {
+            _.each(deck.sideboard, (card) => {
+                newSideboardList += getCardListEntry(card.count, card.card);
+            });
+
+            setSideboardList(newSideboardList);
+        }
+
+        setDeckState(copyDeck(deck));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Resync the editor's text when the deck changes from an external source (e.g. a
+    // sideboard swap made from the preview pane), but not in response to our own edits.
+    useEffect(() => {
+        if (!deck || deck === selfUpdateRef.current) {
+            return;
+        }
+
+        let newCardList = '';
+        _.each(deck.cards, (card) => {
+            newCardList += getCardListEntry(card.count, card.card, card.ff);
+        });
+        setCardList(newCardList);
+
+        // Don't clobber the sideboard textarea while the user is actively editing it.
+        const sideboardBeingEdited = deck.mode === 'draft' && !sideboardReadonly;
+        if (!sideboardBeingEdited) {
+            let newSideboardList = '';
+            _.each(deck.sideboard, (card) => {
+                newSideboardList += getCardListEntry(card.count, card.card);
+            });
+            setSideboardList(newSideboardList);
+        }
+
+        setDeckState(copyDeck(deck));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [deck]);
+
+    function handleCancelClick() {
+        if (isChimera) {
+            navigate('/decks/chimera');
+        } else {
+            navigate('/decks');
         }
     }
 
-    rebuildConjurations(deck) {
-        deck.conjurations = [];
-
-        this.addConjurations(deck.phoenixborn[0], deck);
-        deck.cards.forEach((c) => this.addConjurations(c, deck));
+    function onChange(field, event) {
+        let newDeck = copyDeck(deckState);
+        newDeck[field] = event.target.value;
+        setDeckState(newDeck);
+        dispatchDeck(newDeck);
     }
 
-    onSaveClick(event) {
+    function onPbChange(event) {
+        let newDeck = copyDeck(deckState);
+        let pb = cards[event.target.value];
+
+        if (newDeck.phoenixborn.length == 0) {
+            newDeck.phoenixborn.push(pb);
+        } else newDeck.phoenixborn[0] = pb;
+        setPbid(pb.id);
+
+        if (pb.type === 'Chimera') {
+            rebuildBehaviourAndUltimate(newDeck);
+        }
+        rebuildConjurations(newDeck);
+        setDeckState(newDeck);
+        dispatchDeck(newDeck);
+    }
+
+    function onNumberToAddChange(event) {
+        setNumberToAdd(event.target.value);
+    }
+
+    function addCardChange(selectedCards) {
+        setCardToAdd(selectedCards[0]);
+    }
+
+    function onAddCard(event) {
         event.preventDefault();
 
-        if (this.props.onDeckSave) {
-            this.props.onDeckSave(this.props.deck);
+        if (!cardToAdd || !cardToAdd.name || cardToAdd.type == 'Phoenixborn') {
+            return;
+        }
+
+        let newDeck = deckState;
+        addCard(cardToAdd, parseInt(numberToAdd), newDeck);
+
+        let newCardList = cardList;
+        newCardList += getCardListEntry(numberToAdd, cardToAdd);
+        setCardList(newCardList);
+
+        typeaheadRef.current.clear();
+
+        newDeck = copyDeck(newDeck);
+        setDeckState(newDeck);
+        dispatchDeck(newDeck);
+    }
+
+    function onCardListChange(event) {
+        event.preventDefault();
+
+        let newDeck = deckState;
+        let split = event.target.value.split('\n');
+
+        newDeck.cards = [];
+        newDeck.conjurations = [];
+
+        _.each(split, (line) => {
+            line = line.trim();
+
+            if (!$.isNumeric(line[0])) {
+                return;
+            }
+
+            let index = 0;
+            while (!isNaN(line[index]) || line[index] === 'x') {
+                index++;
+            }
+            let num = parseInt(line.substr(0, index));
+            let cardName = line.substr(index, line.length).trim();
+            let isFirstFive = false;
+            if (cardName.endsWith(' ff')) {
+                isFirstFive = true;
+                cardName = cardName.substr(0, cardName.length - 3);
+            }
+
+            let cardToAddFromList = getCard(cardName);
+
+            if (cardToAddFromList) {
+                const isConjuration =
+                    cardToAddFromList.type === 'Conjuration' ||
+                    cardToAddFromList.type === 'Conjured Alteration Spell';
+                if (!isConjuration) {
+                    addCard(cardToAddFromList, num, newDeck, isFirstFive);
+                }
+            }
+        });
+
+        addConjurations(newDeck.phoenixborn[0].card, newDeck);
+        newDeck = copyDeck(newDeck);
+
+        setCardList(event.target.value);
+        setDeckState(newDeck);
+        dispatchDeck(newDeck);
+    }
+
+    function onSideboardListChange(event) {
+        event.preventDefault();
+
+        let newDeck = deckState;
+        let split = event.target.value.split('\n');
+
+        newDeck.sideboard = [];
+
+        _.each(split, (line) => {
+            line = line.trim();
+
+            if (!$.isNumeric(line[0])) {
+                return;
+            }
+
+            let index = 0;
+            while (!isNaN(line[index]) || line[index] === 'x') {
+                index++;
+            }
+            let num = parseInt(line.substr(0, index));
+            let cardName = line.substr(index, line.length).trim();
+
+            let card = getCard(cardName);
+
+            if (card) {
+                newDeck.sideboard.push({
+                    count: num,
+                    card: card,
+                    id: card.stub
+                });
+            }
+        });
+
+        // Rebuild conjurations from phoenixborn and main deck
+        newDeck.conjurations = [];
+        if (newDeck.phoenixborn && newDeck.phoenixborn.length > 0) {
+            addConjurations(newDeck.phoenixborn[0].card || newDeck.phoenixborn[0], newDeck);
+        }
+        if (newDeck.cards) {
+            newDeck.cards.forEach((c) => addConjurations(c.card, newDeck));
+        }
+
+        // Build sideboard conjurations separately
+        const tempDeckForSideboard = { conjurations: [] };
+        newDeck.sideboard.forEach((c) => addConjurations(c.card, tempDeckForSideboard));
+        newDeck.sideboardConjurations = tempDeckForSideboard.conjurations;
+
+        newDeck = copyDeck(newDeck);
+
+        setSideboardList(event.target.value);
+        setDeckState(newDeck);
+        dispatchDeck(newDeck);
+    }
+
+    function getCard(searchText) {
+        const exactMatch = getAllCards().find((card) =>
+            card.stub === searchText ||
+            card.name.toLowerCase() === searchText.toLowerCase()
+        );
+
+        if (exactMatch) {
+            return exactMatch;
+        }
+        const matches = getAllCards().filter((card) =>
+            card.name.toLowerCase().includes(searchText.toLowerCase())
+        );
+
+        if (matches.length === 1) {
+            return matches[0];
+        }
+        return null;
+    }
+
+    function getAllCards(includeConjurations = false) {
+        return _.toArray(cards).filter(
+            (card) =>
+                (checkRestriction(card)) &&
+                ((isChimera && card.deckType === 'chimera') ||
+                    (!isChimera && card.deckType !== 'chimera')) &&
+                (includeConjurations || card.type !== 'conjuration')
+        );
+    }
+
+    function onDiceListChange(event) {
+        event.preventDefault();
+        if (isChimera) {
+            return;
+        }
+        let newDeck = deckState;
+        let split = event.target.value.split('\n');
+
+        newDeck.dicepool = [];
+
+        _.each(split, (line) => {
+            line = line.trim();
+
+            if (!$.isNumeric(line[0])) {
+                return;
+            }
+
+            let index = 0;
+            while (!isNaN(line[index]) || line[index] === 'x') {
+                index++;
+            }
+            let num = parseInt(line.substr(0, index));
+            let magic = parseMagic(line.substr(index, line.length).toLowerCase());
+            if (magic == '') return;
+            newDeck.dicepool.push({ magic: magic.toLowerCase(), count: num });
+        });
+
+        newDeck = copyDeck(newDeck);
+
+        setDiceList(event.target.value);
+        setDeckState(newDeck);
+        dispatchDeck(newDeck);
+    }
+
+    function onSaveClick(event) {
+        event.preventDefault();
+
+        if (onDeckSave) {
+            onDeckSave(deck);
         }
     }
 
-    getCardListEntry(count, card, ff) {
-        const fFive = ff ? ' ff' : '';
-        return count + ' ' + card.name + fFive + '\n';
-    }
-
-    getDiceListEntry(diceCount) {
-        return diceCount.count + ' ' + diceCount.magic + '\n';
-    }
-
-    // Draft mode methods
+    // ----- Draft mode helpers -----
 
     // Helper to check if a card should be excluded from draft picks
-    shouldExcludeCardFromDraft(card) {
+    function shouldExcludeCardFromDraft(card) {
         // Exclude Phoenixborn, Conjurations, and Conjured Alteration Spells
         if (card.type === 'Phoenixborn' ||
             card.type === 'Conjuration' ||
@@ -472,96 +555,92 @@ class InnerDeckEditor extends React.Component {
         return false;
     }
 
-    getRandomCards(count = 4) {
-        const availableCards = this.getAllCards().filter(
-            (card) => {
-                if (this.shouldExcludeCardFromDraft(card)) {
-                    return false;
-                }
-
-                // Exclude cards that have already been picked in this draft
-                if (this.state.draftState.pickedCardStubs.includes(card.stub)) {
-                    return false;
-                }
-
-                return true;
+    function getRandomCards(count = 4) {
+        const availableCards = getAllCards().filter((card) => {
+            if (shouldExcludeCardFromDraft(card)) {
+                return false;
             }
-        );
+
+            // Exclude cards that have already been picked in this draft
+            if (draftState.pickedCardStubs.includes(card.stub)) {
+                return false;
+            }
+
+            return true;
+        });
 
         // Shuffle and pick random cards
         const shuffled = _.shuffle(availableCards);
         return shuffled.slice(0, count);
     }
 
-    onOpenDraftPicker() {
-        // Only generate new cards if we don't have any current options
-        const randomCards = this.state.draftState.draftCardOptions.length > 0
-            ? this.state.draftState.draftCardOptions
-            : this.getRandomCards(4);
+    function getRandomSideboardCards(count = 4) {
+        // For sideboard in edit mode, allow any cards except ones already in play
+        const availableCards = getAllCards().filter((card) => {
+            if (shouldExcludeCardFromDraft(card)) {
+                return false;
+            }
 
-        this.updateDraftState({
+            // Exclude cards that are already in the deck or sideboard
+            const isInDeck = deckState.cards?.some((c) => c.id === card.stub);
+            const isInSideboard = deckState.sideboard?.some((c) => c.id === card.stub);
+            if (isInDeck || isInSideboard) {
+                return false;
+            }
+
+            return true;
+        });
+
+        // Shuffle and pick random cards
+        const shuffled = _.shuffle(availableCards);
+        return shuffled.slice(0, count);
+    }
+
+    function onOpenDraftPicker() {
+        // Only generate new cards if we don't have any current options
+        const randomCards = draftState.draftCardOptions.length > 0
+            ? draftState.draftCardOptions
+            : getRandomCards(4);
+
+        updateDraftState({
             showDraftPicker: true,
             draftCardOptions: randomCards
         });
     }
 
-    getRandomSideboardCards(count = 4) {
-        // For sideboard in edit mode, allow any cards except already picked ones
-        const availableCards = this.getAllCards().filter(
-            (card) => {
-                if (this.shouldExcludeCardFromDraft(card)) {
-                    return false;
-                }
-
-                // Exclude cards that are already in the deck or sideboard
-                const isInDeck = this.state.deck.cards?.some((c) => c.id === card.stub);
-                const isInSideboard = this.state.deck.sideboard?.some((c) => c.id === card.stub);
-                if (isInDeck || isInSideboard) {
-                    return false;
-                }
-
-                return true;
-            }
-        );
-
-        // Shuffle and pick random cards
-        const shuffled = _.shuffle(availableCards);
-        return shuffled.slice(0, count);
-    }
-
-    onOpenSideboardPicker() {
+    function onOpenSideboardPicker() {
         // Show confirmation modal first
-        this.setState({ showConfirmationModal: true });
+        setShowConfirmationModal(true);
     }
 
-    onConfirmStageCompletion() {
+    function onConfirmStageCompletion() {
         // User confirmed they completed the stage
-        this.setState({ showConfirmationModal: false });
+        setShowConfirmationModal(false);
 
-        // For edit mode (mode !== 'AddDraft'), use getRandomSideboardCards and give 5 refreshes
-        // For add draft mode, use getRandomCards and give 3 refreshes
-        // In both modes, reuse existing cards if they exist
-        if (this.props.mode === 'AddDraft') {
-            const randomCards = this.state.draftState.draftCardOptions.length > 0
-                ? this.state.draftState.draftCardOptions
-                : this.getRandomCards(4);
-            this.updateDraftState({
+        // For edit mode (mode !== 'AddDraft'), use getRandomSideboardCards and give 5 refreshes.
+        // For add draft mode, use getRandomCards and give 3 refreshes.
+        // In both modes, reuse existing cards if they exist.
+        if (mode === 'AddDraft') {
+            const randomCards = draftState.draftCardOptions.length > 0
+                ? draftState.draftCardOptions
+                : getRandomCards(4);
+            updateDraftState({
                 showSideboardPicker: true,
                 draftCardOptions: randomCards,
                 refreshesRemaining: 3
             });
         } else {
             // Edit mode: reuse existing cards or generate new cards and give 5 refreshes
-            const randomCards = this.state.draftState.draftCardOptions.length > 0
-                ? this.state.draftState.draftCardOptions
-                : this.getRandomSideboardCards(4);
+            const randomCards = draftState.draftCardOptions.length > 0
+                ? draftState.draftCardOptions
+                : getRandomSideboardCards(4);
 
             // Only reset refresh count if generating new cards
-            const refreshCount = this.state.draftState.draftCardOptions.length > 0
-                ? this.state.draftState.refreshesRemaining
+            const refreshCount = draftState.draftCardOptions.length > 0
+                ? draftState.refreshesRemaining
                 : 5;
 
-            this.updateDraftState({
+            updateDraftState({
                 showSideboardPicker: true,
                 draftCardOptions: randomCards,
                 refreshesRemaining: refreshCount
@@ -569,21 +648,21 @@ class InnerDeckEditor extends React.Component {
         }
     }
 
-    onCancelStageCompletion() {
+    function onCancelStageCompletion() {
         // User cancelled - just close the modal
-        this.setState({ showConfirmationModal: false });
+        setShowConfirmationModal(false);
     }
 
-    onRefreshSideboardCards() {
-        // Generate new random cards while keeping locked cards
-        // Works for both AddDraft mode and edit mode
-        const currentCards = this.state.draftState.draftCardOptions;
-        const lockedIndices = this.state.draftState.lockedCardIndices;
+    function onRefreshSideboardCards() {
+        // Generate new random cards while keeping locked cards.
+        // Works for both AddDraft mode and edit mode.
+        const currentCards = draftState.draftCardOptions;
+        const lockedIndices = draftState.lockedCardIndices;
 
         // Use appropriate method based on mode
-        const newRandomCards = this.props.mode === 'AddDraft'
-            ? this.getRandomCards(4)
-            : this.getRandomSideboardCards(4);
+        const newRandomCards = mode === 'AddDraft'
+            ? getRandomCards(4)
+            : getRandomSideboardCards(4);
 
         // Replace non-locked cards with new random cards
         const refreshedCards = currentCards.map((card, index) => {
@@ -595,89 +674,89 @@ class InnerDeckEditor extends React.Component {
             }
         });
 
-        this.updateDraftState({
+        updateDraftState({
             draftCardOptions: refreshedCards,
-            refreshesRemaining: this.state.draftState.refreshesRemaining - 1
+            refreshesRemaining: draftState.refreshesRemaining - 1
         });
     }
 
-    onDraftCardSelected(selectedCard, quantity) {
+    function onDraftCardSelected(selectedCard, quantity) {
         // Add the selected card to the deck with the specified quantity
-        let deck = this.state.deck;
-        this.addCard(selectedCard, quantity, deck);
+        let newDeck = deckState;
+        addCard(selectedCard, quantity, newDeck);
 
         // Update the card list text
-        let cardList = this.state.cardList;
-        cardList += this.getCardListEntry(quantity, selectedCard);
+        let newCardList = cardList;
+        newCardList += getCardListEntry(quantity, selectedCard);
 
-        deck = this.copyDeck(deck);
+        newDeck = copyDeck(newDeck);
 
-        // Track this card as picked and clear the draft options after selection
-        // Reset refresh counter and locked cards
-        this.setState({ cardList: cardList });
-        this.updateDraftState({
+        // Track this card as picked and clear the draft options after selection.
+        // Reset refresh counter and locked cards.
+        setCardList(newCardList);
+        updateDraftState({
             showDraftPicker: false,
             draftCardOptions: [],
             refreshesRemaining: 3,
             lockedCardIndices: [],
-            pickedCardStubs: [...this.state.draftState.pickedCardStubs, selectedCard.stub]
+            pickedCardStubs: [...draftState.pickedCardStubs, selectedCard.stub]
         });
+        setDeckState(newDeck);
 
-        this.props.updateDeck(deck);
+        dispatchDeck(newDeck);
     }
 
-    onDraftSideboardCardSelected(selectedCard, quantity) {
-        // Add the card to sideboard array instead of notes
-        let deck = this.state.deck;
+    function onDraftSideboardCardSelected(selectedCard, quantity) {
+        // Add the card to the sideboard array
+        let newDeck = deckState;
 
-        if (!deck.sideboard) {
-            deck.sideboard = [];
+        if (!newDeck.sideboard) {
+            newDeck.sideboard = [];
         }
 
         // Add card to sideboard
-        deck.sideboard.push({
+        newDeck.sideboard.push({
             count: quantity,
             card: selectedCard,
             id: selectedCard.stub
         });
 
         // Update the sideboard list text
-        let sideboardList = this.state.sideboardList;
-        sideboardList += this.getCardListEntry(quantity, selectedCard);
+        let newSideboardList = sideboardList;
+        newSideboardList += getCardListEntry(quantity, selectedCard);
 
-        deck = this.copyDeck(deck);
+        newDeck = copyDeck(newDeck);
 
-        // Different behavior for AddDraft mode vs edit mode
-        this.setState({ sideboardList: sideboardList, deck: deck });
+        setSideboardList(newSideboardList);
+        setDeckState(newDeck);
 
-        if (this.props.mode === 'AddDraft') {
+        if (mode === 'AddDraft') {
             // AddDraft mode: Clear options after selection
-            this.updateDraftState({
+            updateDraftState({
                 showSideboardPicker: false,
                 draftCardOptions: [],
                 refreshesRemaining: 3,
                 lockedCardIndices: [],
-                sideboardPicksRemaining: this.state.draftState.sideboardPicksRemaining - 1,
-                pickedCardStubs: [...this.state.draftState.pickedCardStubs, selectedCard.stub]
+                sideboardPicksRemaining: draftState.sideboardPicksRemaining - 1,
+                pickedCardStubs: [...draftState.pickedCardStubs, selectedCard.stub]
             });
         } else {
-            // Edit mode: Keep the picker open with the same cards for multiple selections
-            // Just close the modal and keep card options
-            this.updateDraftState({
+            // Edit mode: Just close the modal and keep card options
+            updateDraftState({
                 showSideboardPicker: false
             });
         }
 
-        this.props.updateDeck(deck);
+        dispatchDeck(newDeck);
     }
 
-    onRefreshDraftCards() {
-        if (this.state.draftState.refreshesRemaining > 0) {
-            const currentCards = this.state.draftState.draftCardOptions;
-            const lockedIndices = this.state.draftState.lockedCardIndices;
+    function onRefreshDraftCards() {
+        if (draftState.refreshesRemaining > 0) {
+            const currentCards = draftState.draftCardOptions;
+            const lockedIndices = draftState.lockedCardIndices;
 
             // Generate new cards for unlocked positions
-            const newRandomCards = this.getRandomCards(4 - lockedIndices.length);
+            const newRandomCards = getRandomCards(4 - lockedIndices.length);
             const newCards = [];
             let randomIndex = 0;
 
@@ -692,312 +771,287 @@ class InnerDeckEditor extends React.Component {
                 }
             }
 
-            this.updateDraftState({
+            updateDraftState({
                 draftCardOptions: newCards,
-                refreshesRemaining: this.state.draftState.refreshesRemaining - 1
+                refreshesRemaining: draftState.refreshesRemaining - 1
             });
         }
     }
 
-    onToggleLockCard(index) {
-        const lockedIndices = [...this.state.draftState.lockedCardIndices];
+    function onToggleLockCard(index) {
+        const lockedIndices = [...draftState.lockedCardIndices];
         const indexPos = lockedIndices.indexOf(index);
 
         if (indexPos > -1) {
             // Unlock card
-            this.updateDraftState({ lockedCardIndices: [] });
+            updateDraftState({ lockedCardIndices: [] });
         } else {
             // Lock card (only one card can be locked at a time)
-            this.updateDraftState({ lockedCardIndices: [index] });
+            updateDraftState({ lockedCardIndices: [index] });
         }
     }
 
-    onCloseDraftPicker() {
+    function onCloseDraftPicker() {
         // Keep the draftCardOptions when closing without selecting
-        this.updateDraftState({
-            showDraftPicker: false
-        });
+        updateDraftState({ showDraftPicker: false });
     }
 
-    onCloseSideboardPicker() {
+    function onCloseSideboardPicker() {
         // Keep the draftCardOptions when closing without selecting
-        this.updateDraftState({
-            showSideboardPicker: false
-        });
+        updateDraftState({ showSideboardPicker: false });
     }
 
-    toggleSideboardReadonly() {
-        this.setState({ sideboardReadonly: !this.state.sideboardReadonly });
+    function toggleSideboardReadonly() {
+        setSideboardReadonly((prev) => !prev);
     }
 
-    render() {
-        if (!this.props.deck || this.props.loading) {
-            return <div>Waiting for deck...</div>;
-        }
+    if (!deck || loading) {
+        return <div>Waiting for deck...</div>;
+    }
 
-        let phoenixbornCards = this.getAllCards().filter((c) => c.type == 'Phoenixborn');
-        phoenixbornCards.sort((a, b) => (a.name < b.name ? -1 : 1));
+    const isDraftDeck = deckState.mode === 'draft';
 
-        const lookupCards = this.getAllCards().filter((c) => c.deckType !== 'chimera');
+    let phoenixbornCards = getAllCards().filter(
+        (c) => (isChimera && c.type === 'Chimera') || (!isChimera && c.type == 'Phoenixborn')
+    );
+    phoenixbornCards.sort((a, b) => (a.name < b.name ? -1 : 1));
+    const conjurationTypes = ['Conjuration', 'Conjured Alteration Spell', 'Conjured Aspect'];
+    const lookupCards = getAllCards().filter(
+        (c) =>
+            !conjurationTypes.includes(c.type) &&
+            ((isChimera &&
+                c.deckType === 'chimera' &&
+                !c.name.includes('Ultimate') &&
+                !c.name.includes('Behaviour') &&
+                c.type !== 'Chimera') ||
+                (!isChimera && c.deckType !== 'chimera'))
+    );
 
-        return (
-            <div>
-                <Form>
-                    <Form.Group as={Row} controlId='deckName'>
-                        <Form.Label column sm='3'>
-                            Deck Name
-                        </Form.Label>
-                        <Col>
-                            <Form.Control
-                                as='input'
-                                defaultValue={this.state.deck.name}
-                                onChange={this.onChange.bind(this, 'name')}
-                            />
-                        </Col>
-                    </Form.Group>
-                    <Form.Group as={Row} controlId='phoenixborn'>
-                        <Form.Label column sm='3'>
-                            Phoenixborn
-                        </Form.Label>
-                        <Col>
-                            <Form.Control
-                                as='select'
-                                onChange={this.onPbChange.bind(this)}
-                                value={this.pbid}
-                                disabled={this.props.mode === 'AddDraft'}
-                            >
-                                {phoenixbornCards.map((c, index) => {
-                                    return (
-                                        <option key={index} value={c.stub}>
-                                            {c.name}
-                                        </option>
-                                    );
-                                })}
-                            </Form.Control>
-                            {this.props.mode === 'AddDraft' && (
-                                <Form.Text className='text-muted'>
-                                    Phoenixborn randomly selected for draft mode
-                                </Form.Text>
-                            )}
-                        </Col>
-                    </Form.Group>
-                    {this.props.mode === 'AddDraft' ? (
-                        <>
-                            <h4>
-                                Click the button below to pick a card from 4 random options.
-                            </h4>
-                            <Row>
-                                <Col sm='3'></Col>
-                                <Col>
-                                    <Button
-                                        variant='info'
-                                        onClick={this.onOpenDraftPicker.bind(this)}
-                                        className='def'
-                                    >
-                                        Pick a Card
-                                    </Button>
-                                </Col>
-                            </Row>
-                        </>
-                    ) : this.state.deck.mode === 'draft' ? (
-                        <>
-                            <h4>
-                                Add sideboard cards as rewards from defeating Chimera.
-                            </h4>
-                            <Row>
-                                <Col sm='3'></Col>
-                                <Col>
-                                    <Button
-                                        variant='secondary'
-                                        onClick={this.onOpenSideboardPicker.bind(this)}
-                                        className='def'
-                                    >
-                                        Add Sideboard Card
-                                    </Button>
-                                </Col>
-                            </Row>
-                        </>
-                    ) : this.state.deck.mode !== 'draft' ? (
-                        <>
-                            <h4>
-                                You can type card names and quantities into the box below, or add them using
-                                this lookup box.
-                            </h4>
-
-                            <Form.Group as={Row} controlId='cardLookup'>
-                                <Form.Label column sm='3'>
-                                    Card
-                                </Form.Label>
-                                <Col sm='4'>
-                                    <Typeahead
-                                        options={lookupCards}
-                                        onChange={this.addCardChange.bind(this)}
-                                        labelKey={'name'}
-                                    />
-                                </Col>
-                                <Form.Label column sm='2'>
-                                    Count
-                                </Form.Label>
-                                <Col sm='2'>
-                                    <Form.Control
-                                        as='input'
-                                        onChange={this.onNumberToAddChange.bind(this)}
-                                        defaultValue={this.state.numberToAdd.toString()}
-                                    />
-                                </Col>
-                            </Form.Group>
-                            <Row>
-                                <Col sm='3'></Col>
-                                <Col>
-                                    <button className='btn btn-primary def' onClick={this.onAddCard.bind(this)}>
-                                        Add
-                                    </button>
-                                </Col>
-                            </Row>
-                        </>
-                    ) : null}
-                    <TextArea
-                        label='Cards'
-                        rows='4'
-                        value={this.state.cardList}
-                        onChange={this.onCardListChange.bind(this)}
-                        readOnly={this.state.deck.mode === 'draft'}
-                    />
-                    <Form.Group as={Row}>
-                        <Form.Label column sm='3' style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
-                            Sideboard
-                            {this.state.deck.mode === 'draft' && (
-                                <Button
-                                    variant='link'
-                                    size='sm'
-                                    onClick={this.toggleSideboardReadonly.bind(this)}
-                                    style={{ marginLeft: '5px', padding: '0', fontSize: '1em', lineHeight: '1' }}
-                                >
-                                    {this.state.sideboardReadonly ? '🔒' : '🔓'}
+    return (
+        <div className='deck-editor'>
+            <Form>
+                <Form.Group as={Row} controlId='deckName'>
+                    <Form.Label column sm='3'>
+                        Deck Name
+                    </Form.Label>
+                    <Col>
+                        <Form.Control
+                            as='input'
+                            defaultValue={deckState.name}
+                            onChange={(e) => onChange('name', e)}
+                        />
+                    </Col>
+                </Form.Group>
+                <Form.Group as={Row} controlId='phoenixborn'>
+                    <Form.Label column sm='3'>
+                        Phoenixborn
+                    </Form.Label>
+                    <Col>
+                        <Form.Control
+                            as='select'
+                            onChange={onPbChange}
+                            value={pbid}
+                            disabled={mode === 'AddDraft'}
+                        >
+                            {phoenixbornCards.map((c, index) => {
+                                return (
+                                    <option key={index} value={c.stub}>
+                                        {c.name}
+                                    </option>
+                                );
+                            })}
+                        </Form.Control>
+                        {mode === 'AddDraft' && (
+                            <Form.Text className='text-muted'>
+                                Phoenixborn randomly selected for draft mode
+                            </Form.Text>
+                        )}
+                    </Col>
+                </Form.Group>
+                {mode === 'AddDraft' ? (
+                    <>
+                        <h4>Click the button below to pick a card from 4 random options.</h4>
+                        <Row>
+                            <Col sm='3'></Col>
+                            <Col>
+                                <Button variant='info' onClick={onOpenDraftPicker} className='def'>
+                                    Pick a Card
                                 </Button>
-                            )}
-                        </Form.Label>
-                        <Col>
-                            <textarea
-                                rows={4}
-                                className='form-control'
-                                value={this.state.sideboardList}
-                                onChange={this.onSideboardListChange.bind(this)}
-                                readOnly={this.state.deck.mode === 'draft' && this.state.sideboardReadonly}
-                            />
-                        </Col>
-                    </Form.Group>
-                    <h4>Enter dice quantities into the box below, one per line (Charm, Ceremonial, Illusion, Natural, Divine, Sympathy, Time)</h4>
-                    <TextArea
-                        label='Dice'
-                        rows='4'
-                        value={this.state.diceList}
-                        onChange={this.onDiceListChange.bind(this)}
-                    />
-                    <TextArea
-                        label='Notes'
-                        rows='4'
-                        value={this.state.deck.notes}
-                        onChange={this.onChange.bind(this, 'notes')}
-                    />
+                            </Col>
+                        </Row>
+                    </>
+                ) : isDraftDeck ? (
+                    <>
+                        <h4>Add sideboard cards as rewards from defeating Chimera.</h4>
+                        <Row>
+                            <Col sm='3'></Col>
+                            <Col>
+                                <Button
+                                    variant='secondary'
+                                    onClick={onOpenSideboardPicker}
+                                    className='def'
+                                >
+                                    Add Sideboard Card
+                                </Button>
+                            </Col>
+                        </Row>
+                    </>
+                ) : (
+                    <>
+                        <h4>
+                            You can type card names and quantities into the box below, or add them
+                            using this lookup box.
+                        </h4>
 
-                    <div className='form-group'>
-                        <div className='col-sm-offset-3 col-sm-8'>
-                            <button
-                                // eslint-disable-next-line react/no-string-refs
-                                ref='submit'
-                                type='submit'
-                                className='btn btn-success def'
-                                onClick={this.onSaveClick.bind(this)}
+                        <Form.Group as={Row} controlId='cardLookup'>
+                            <Form.Label column sm='3'>
+                                Card
+                            </Form.Label>
+                            <Col sm='4'>
+                                <Typeahead
+                                    options={lookupCards}
+                                    onChange={addCardChange}
+                                    labelKey={'name'}
+                                    ref={typeaheadRef}
+                                    id='cardtypeahead'
+                                />
+                            </Col>
+                            <Form.Label column sm='1'>
+                                Count
+                            </Form.Label>
+                            <Col sm='2'>
+                                <Form.Control
+                                    as='input'
+                                    onChange={onNumberToAddChange}
+                                    defaultValue={numberToAdd.toString()}
+                                />
+                            </Col>
+                            <Col sm='2'>
+                                <button className='btn btn-primary def' onClick={onAddCard}>
+                                    Add
+                                </button>
+                            </Col>
+                        </Form.Group>
+                    </>
+                )}
+                <TextArea
+                    label='Cards'
+                    rows='10'
+                    value={cardList}
+                    onChange={onCardListChange}
+                    readOnly={isDraftDeck}
+                />
+                <Form.Group as={Row}>
+                    <Form.Label
+                        column
+                        sm='3'
+                        style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}
+                    >
+                        Sideboard
+                        {isDraftDeck && (
+                            <Button
+                                variant='link'
+                                size='sm'
+                                onClick={toggleSideboardReadonly}
+                                style={{
+                                    marginLeft: '5px',
+                                    padding: '0',
+                                    fontSize: '1em',
+                                    lineHeight: '1'
+                                }}
                             >
-                                Save Deck
-                            </button>
-                            <button className='btn btn-primary def' onClick={this.handleCancelClick.bind(this)}>
-                                Cancel
-                            </button>
-                        </div>
+                                {sideboardReadonly ? '🔒' : '🔓'}
+                            </Button>
+                        )}
+                    </Form.Label>
+                    <Col>
+                        <textarea
+                            rows={4}
+                            className='form-control'
+                            value={sideboardList}
+                            onChange={onSideboardListChange}
+                            readOnly={isDraftDeck && sideboardReadonly}
+                        />
+                    </Col>
+                </Form.Group>
+                <h4>Enter dice quantities into the box below, one per line e.g. 3 Charm</h4>
+                <TextArea
+                    label='Dice'
+                    rows={isChimera ? 2 : 4}
+                    value={diceList}
+                    onChange={onDiceListChange}
+                    disabled={isChimera}
+                />
+                <TextArea
+                    label='Notes'
+                    rows='4'
+                    value={deckState.notes || ''}
+                    onChange={(e) => onChange('notes', e)}
+                />
+
+                <div className='form-group'>
+                    <div className='col-sm-offset-3 col-sm-8'>
+                        <button type='submit' className='btn btn-success def' onClick={onSaveClick}>
+                            Save Deck
+                        </button>
+                        <button className='btn btn-primary def' onClick={handleCancelClick}>
+                            Cancel
+                        </button>
                     </div>
-                </Form>
-                {/* Draft mode card pickers */}
-                {this.props.mode === 'AddDraft' && (
-                    <DraftCardPicker
-                        show={this.state.draftState.showDraftPicker}
-                        cards={this.state.draftState.draftCardOptions}
-                        onCardSelected={this.onDraftCardSelected.bind(this)}
-                        onClose={this.onCloseDraftPicker.bind(this)}
-                        onRefresh={this.onRefreshDraftCards.bind(this)}
-                        refreshesRemaining={this.state.draftState.refreshesRemaining}
-                        onToggleLock={this.onToggleLockCard.bind(this)}
-                        lockedIndices={this.state.draftState.lockedCardIndices}
-                    />
-                )}
-                {/* Sideboard card picker for both AddDraft and edit modes */}
-                {(this.props.mode === 'AddDraft' || this.state.deck.mode === 'draft') && (
-                    <DraftCardPicker
-                        show={this.state.draftState.showSideboardPicker}
-                        cards={this.state.draftState.draftCardOptions}
-                        onCardSelected={this.onDraftSideboardCardSelected.bind(this)}
-                        onClose={this.onCloseSideboardPicker.bind(this)}
-                        onRefresh={this.onRefreshSideboardCards.bind(this)}
-                        refreshesRemaining={this.state.draftState.refreshesRemaining}
-                        onToggleLock={this.onToggleLockCard.bind(this)}
-                        lockedIndices={this.state.draftState.lockedCardIndices}
-                    />
-                )}
-                {/* Confirmation modal for stage completion */}
-                <Modal
-                    show={this.state.showConfirmationModal}
-                    onHide={this.onCancelStageCompletion.bind(this)}
-                    backdrop="static"
-                    keyboard={true}
-                >
-                    <Modal.Header closeButton>
-                        <Modal.Title>Stage Completion Confirmation</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <p>Have you completed the current stage?</p>
-                    </Modal.Body>
-                    <Modal.Footer>
-                        <Button
-                            variant="secondary"
-                            onClick={this.onCancelStageCompletion.bind(this)}
-                        >
-                            No
-                        </Button>
-                        <Button
-                            variant="primary"
-                            onClick={this.onConfirmStageCompletion.bind(this)}
-                        >
-                            Yes
-                        </Button>
-                    </Modal.Footer>
-                </Modal>
-            </div>
-        );
-    }
+                </div>
+            </Form>
+            {/* Draft mode card pickers */}
+            {mode === 'AddDraft' && (
+                <DraftCardPicker
+                    show={draftState.showDraftPicker}
+                    cards={draftState.draftCardOptions}
+                    onCardSelected={onDraftCardSelected}
+                    onClose={onCloseDraftPicker}
+                    onRefresh={onRefreshDraftCards}
+                    refreshesRemaining={draftState.refreshesRemaining}
+                    onToggleLock={onToggleLockCard}
+                    lockedIndices={draftState.lockedCardIndices}
+                />
+            )}
+            {/* Sideboard card picker for both AddDraft and edit modes */}
+            {(mode === 'AddDraft' || isDraftDeck) && (
+                <DraftCardPicker
+                    show={draftState.showSideboardPicker}
+                    cards={draftState.draftCardOptions}
+                    onCardSelected={onDraftSideboardCardSelected}
+                    onClose={onCloseSideboardPicker}
+                    onRefresh={onRefreshSideboardCards}
+                    refreshesRemaining={draftState.refreshesRemaining}
+                    onToggleLock={onToggleLockCard}
+                    lockedIndices={draftState.lockedCardIndices}
+                />
+            )}
+            {/* Confirmation modal for stage completion */}
+            <Modal
+                show={showConfirmationModal}
+                onHide={onCancelStageCompletion}
+                backdrop='static'
+                keyboard={true}
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Stage Completion Confirmation</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>Have you completed the current stage?</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant='secondary' onClick={onCancelStageCompletion}>
+                        No
+                    </Button>
+                    <Button variant='primary' onClick={onConfirmStageCompletion}>
+                        Yes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </div>
+    );
 }
 
-InnerDeckEditor.displayName = 'DeckEditor';
-InnerDeckEditor.propTypes = {
-    cards: PropTypes.object,
-    deck: PropTypes.object,
-    loading: PropTypes.bool,
-    mode: PropTypes.string,
-    navigate: PropTypes.func,
-    onDeckSave: PropTypes.func,
-    updateDeck: PropTypes.func
-};
-
-function mapStateToProps(state) {
-    return {
-        apiError: state.api.message,
-        cards: state.cards.cards,
-        deck: state.cards.selectedDeck,
-        decks: state.cards.decks,
-        loading: state.api.loading
-    };
-}
-
-const DeckEditor = connect(mapStateToProps, actions)(InnerDeckEditor);
+DeckEditor.displayName = 'DeckEditor';
 
 export default DeckEditor;

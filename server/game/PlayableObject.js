@@ -49,7 +49,7 @@ class PlayableObject extends EffectSource {
     }
 
     updateAbilityEvents(from, to) {
-        _.each(this.getReactions(true), (reaction) => {
+        this.getReactions(true).forEach((reaction) => {
             // setup reactions in hand
             if (this.type === CardType.ReactionSpell) {
                 if (
@@ -116,7 +116,7 @@ class PlayableObject extends EffectSource {
             throw new Error(`'${location}' is not a supported effect location.`);
         }
 
-        let ability = _.extend(
+        let ability = Object.assign(
             {
                 abilityType: 'persistentEffect',
                 duration: 'persistentEffect',
@@ -137,7 +137,7 @@ class PlayableObject extends EffectSource {
             this.removeLastingEffects();
         }
 
-        _.each(this.getPersistentEffects(true), (effect) => {
+        this.getPersistentEffects(true).forEach((effect) => {
             if (effect.location !== 'any') {
                 if (EffectLocations.includes(to) && !EffectLocations.includes(from)) {
                     effect.ref = this.addEffectToEngine(effect);
@@ -199,9 +199,20 @@ class PlayableObject extends EffectSource {
     canAttach(card, context) {
         return (
             card &&
-            [...BattlefieldTypes, CardType.ReadySpell].includes(card.getType()) &&
-            this.canPlayAsUpgrade()
+            [...BattlefieldTypes, CardType.ReadySpell, CardType.Phoenixborn].includes(card.getType()) &&
+            this.canPlayAsUpgrade() &&
+            (
+                !context.player.isBot ||
+                this.botTarget === 'any' ||
+                (this.botTarget === 'mine' && card.controller === context.player) ||
+                (this.botTarget === 'opponent' && card.controller === context.player.opponent)
+            )
         );
+    }
+
+    // what should a bot prefer when targetting / attaching
+    get botTarget() {
+        return 'any';
     }
 
     canPlayAsUpgrade() {

@@ -340,7 +340,7 @@ describe('Double Down', function () {
         // https://github.com/Ashteki/ashteki/issues/1471
         beforeEach(function () {
             this.setupTest({
-                mode: 'solo',
+                mode: 'chimera',
                 player1: {
                     phoenixborn: 'aradel-summergaard',
                     inPlay: ['frost-frog'],
@@ -358,7 +358,6 @@ describe('Double Down', function () {
                     deck: [],
                     spellboard: [],
                     threatZone: [],
-                    dicepool: ['basic', 'basic', 'basic', 'basic', 'basic']
                 }
             });
         });

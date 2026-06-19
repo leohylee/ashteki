@@ -9,22 +9,28 @@ class PlayUpgradeAction extends BasePlayAction {
         super(card, {
             activePromptTitle: 'Choose a unit to attach to',
             cardType: BattlefieldTypes,
+            showCancel: true, // don't set to optional because that errors
             gameAction: new AttachAction((context) => ({ upgrade: context.source }))
         });
         this.title = 'Play this alteration';
+        this.willAttach = true;
     }
 
     displayMessage(context) {
         if (context.target) {
             context.game.addMessage(
-                '{0} plays {1} attaching it to {2}',
+                '{0}{1}: {2} plays {3} attaching it to {4}',
+                context.costs.actions,
+                context.costs.returnDice,
                 context.player,
                 context.source,
                 context.target
             );
         } else {
             context.game.addMessage(
-                '{0} plays {1} and it is discarded',
+                '{0}{1}: {2} plays {3} and it is discarded',
+                context.costs.actions,
+                context.costs.returnDice,
                 context.player,
                 context.source
             );

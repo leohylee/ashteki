@@ -1,23 +1,8 @@
-export function navigate(path, search = '', noHistory = false) {
-    return {
-        type: 'NAVIGATE',
-        newPath: path,
-        search: search,
-        noHistory: noHistory
-    };
-}
-
-export function setUrl(path) {
-    return {
-        type: 'SET_URL',
-        path: path
-    };
-}
-
-export function zoomCard(card) {
+export function zoomCard(card, options = {}) {
     return {
         type: 'ZOOM_CARD',
-        card: card
+        card: card,
+        options: options
     };
 }
 
