@@ -180,7 +180,12 @@ class Lobby {
         }
 
         if (ioSocket.handshake.query.version) {
-            versionInfo = moment(ioSocket.handshake.query.version);
+            // Strict parse so a non-date version (e.g. 'development' in dev builds) doesn't
+            // trigger moment's loose-parsing deprecation warning on every handshake. Treat an
+            // unparseable version as current so the out-of-date banner is only shown for real
+            // (date-stamped) client versions that are older than the server.
+            const parsedVersion = moment(ioSocket.handshake.query.version, moment.ISO_8601, true);
+            versionInfo = parsedVersion.isValid() ? parsedVersion : version;
         }
 
         if (!versionInfo || versionInfo < version) {
@@ -737,6 +742,37 @@ class Lobby {
             for (let u of deck.behaviour) {
                 u.card = cards[u.id];
             }
+        }
+
+        // Guard against decks referencing cards missing from the loaded card data (e.g. a
+        // stale deck, or the card map not yet populated). Without this, the validation below
+        // dereferences c.card and throws, taking down the entire lobby for all users.
+        const unresolved = []
+            .concat(
+                deck.cards,
+                deck.phoenixborn,
+                deck.conjurations,
+                deck.ultimate || [],
+                deck.behaviour || []
+            )
+            .filter((c) => c && !c.card)
+            .map((c) => c.id);
+        if (unresolved.length > 0) {
+            logger.warn(
+                `Deck "${deck.name}" references cards missing from the card data: ` +
+                    `${unresolved.join(', ')}. Marking as not legal to play.`
+            );
+            deck.status = {
+                basicRules: false,
+                maxThree: true,
+                legalToPlay: false,
+                hasConjurations: false,
+                tenDice: false,
+                uniques: false,
+                aspectCheck: false
+            };
+            game.selectDeck(user.username, deck, !isForMe);
+            return;
         }
 
         let hasConjurations = this.checkConjurations(deck);
