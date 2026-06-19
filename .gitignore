@@ -18,5 +18,8 @@ mongodb
 /.idea/
 release.bat
 dump.rdb
-# one off scripts
-scripts/
+# one off scripts (top-level only; keep server/scripts tracked)
+/scripts/
+
+# local node version pin for nvm (repo's canonical pin is .node-version)
+.nvmrc

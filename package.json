@@ -8,6 +8,8 @@
         "mongod": "mongod --dbpath=/data --port 27017\n",
         "start": "node .",
         "fetchdata": "node server/scripts/fetchdata",
+        "images": "node server/scripts/imageIntegrity.js",
+        "images:check": "node server/scripts/imageIntegrity.js --check",
         "game": "node server/gamenode",
         "test": "cross-env JASMINE_CONFIG_PATH=./jasmine.json jasmine",
         "lint": "eslint --ext=js --ext=jsx client/ server/ test/",

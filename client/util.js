@@ -5,9 +5,13 @@ const urlMatchingRegex = new RegExp(
 
 export function imageUrl(cardStub) {
     if (cardStub && cardStub.includes('http')) {
+        // ashteki CDN card images have been downloaded locally, so serve them from /cards
+        // (by file name) to keep the app fully offline-capable. Other URLs are used as-is.
+        if (cardStub.includes('cdn.ashteki.com')) {
+            return `/cards/${cardStub.split('/').pop()}`;
+        }
         return cardStub;
     }
-    // Use local images first, fallback to CDN if not available
     if (cardStub && cardStub.includes('.')) {
         return `/cards/${cardStub}`;
     }
