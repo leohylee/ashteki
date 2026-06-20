@@ -20,12 +20,12 @@
     -webkit-filter: grayscale(.5);
 
     &.pvp {
-        background-image: url('https://cdn.ashes.live/images/cards/clashing-tempers.jpg');
+        background-image: url('/cards/clashing-tempers.jpg');
         background-position: center;
     }
 
     &.chimera {
-        background-image: url('https://cdn.ashes.live/images/cards/corpse-of-viros-1p-standard-1.jpg');
+        background-image: url('/cards/corpse-of-viros-1p-standard-1.jpg');
         background-position: 50% 40%;
         background-size: 150%;
     }
@@ -43,14 +43,14 @@
     }
 
     &.replay {
-        background-image: url('https://cdn.ashes.live/images/cards/copycat.jpg');
+        background-image: url('/cards/copycat.jpg');
         background-position: 50% 30%;
         background-size: 170%;
 
     }
 
     &.bot {
-        background-image: url('https://cdn.ashes.live/images/cards/bound-soul.jpg');
+        background-image: url('/cards/bound-soul.jpg');
         background-position: 45% 32%;
         background-size: 200%;
     }
@@ -138,7 +138,7 @@
     // min-width: 250px;
     // height: 150px;
 
-    background-image: url('https://cdn.ashes.live/images/cards/resonance.jpg');
+    background-image: url('/cards/resonance.jpg');
     background-position: 40% 40%;
     background-size: 150%;
 
