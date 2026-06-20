@@ -1,0 +1,78 @@
+# Production stack for the shared AWS LCG box (single-user, stop-when-idle).
+#
+# This runs alongside the DragnCards / RingsDB / MarvelCDB stacks on one EC2 box.
+# It does NOT include Caddy: the shared Caddy container in the DragnCards stack
+# (network_mode: host) terminates TLS for ashes.leohyl.app and reverse-proxies to
+# the loopback ports published below. See deploy/README-aws.md.
+#
+# Differences from the dev docker-compose.yml:
+#   - No Vite dev server / HMR / inspector ports. The React app is built into
+#     dist/ by the Dockerfile (`npm run build`) and served by the lobby's
+#     express.static (server/lobbyserver.js).
+#   - lobby + gamenode are bound to 127.0.0.1 only; Mongo and Redis aren't
+#     published. Caddy reaches lobby/gamenode over host loopback.
+#   - lobby uses PORT=4100 to avoid clashing with DragnCards' backend on :4000.
+#
+# Bring up with:  docker compose -f compose.prod.yml up -d
+services:
+    mongo:
+        # Service name MUST stay "mongo" so the default config's
+        # mongodb://mongo:27017/ashteki resolves with no override.
+        image: mongo
+        restart: unless-stopped
+        volumes:
+            - mongodata:/data/db
+
+    redis:
+        # Service name MUST stay "redis" so the default redis://redis/ resolves.
+        # Redis is also the lobby <-> gamenode coordination channel.
+        image: redis:alpine
+        restart: unless-stopped
+        command: redis-server
+        volumes:
+            - redisdata:/data
+
+    lobby:
+        build: .
+        image: ashteki
+        restart: unless-stopped
+        depends_on:
+            - mongo
+            - redis
+        # Loopback only: the shared Caddy proxies ashes.leohyl.app here.
+        ports:
+            - '127.0.0.1:4100:4100'
+        environment:
+            - NODE_ENV=production
+            - PORT=4100
+        volumes:
+            # Persist downloaded card images on EBS; served by express.static(public).
+            - cards:/usr/src/app/public/cards
+        command:
+            - node
+            - '.'
+
+    gamenode:
+        build: .
+        image: ashteki
+        restart: unless-stopped
+        depends_on:
+            - mongo
+            - redis
+        # Loopback only: Caddy proxies /gamenode1/* here. Listens on socketioPort
+        # (10000, config/production.json5) since PORT is left unset.
+        ports:
+            - '127.0.0.1:10000:10000'
+        environment:
+            - NODE_ENV=production
+            # The handoff advertises this as the gamenode address; the browser
+            # connects to wss://ashes.leohyl.app/gamenode1/socket.io.
+            - GAMENODE_HOST=ashes.leohyl.app
+        command:
+            - node
+            - 'server/gamenode'
+
+volumes:
+    mongodata:
+    redisdata:
+    cards:
