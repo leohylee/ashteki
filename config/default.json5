@@ -2,6 +2,7 @@
     env: 'development',
 
     mongo: 'mongodb://mongo:27017/ashteki',
+    leaguedb: 'mongodb://mongo:27017/ashteki',
     secret: 'somethingverysecret',
     redisUrl: 'redis://redis/',
     minLobbyChatTime: 0, // The time (in seconds) an account has to be registered before it can chat in the lobby
